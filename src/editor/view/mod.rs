@@ -67,6 +67,9 @@ impl View {
             let truncated_line = line.trim_end_matches(&['\r', '\n']);
             self.renderer.render(truncated_line);
         }
+        for _ in min(lines, height as usize)..height as usize {
+            self.renderer.render("~");
+        }
         Ok(())
     }
 }
