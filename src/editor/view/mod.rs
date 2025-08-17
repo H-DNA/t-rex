@@ -43,7 +43,7 @@ impl View {
     pub fn render(&mut self, buffer: &Buffer) -> Result<(), Error> {
         self.render_content(buffer)?;
         self.render_cursor(buffer)?;
-        self.renderer.flush(false)?;
+        self.renderer.flush_diff()?;
         Terminal::flush()?;
         Ok(())
     }
@@ -51,7 +51,7 @@ impl View {
     pub fn force_render(&mut self, buffer: &Buffer) -> Result<(), Error> {
         self.render_content(buffer)?;
         self.render_cursor(buffer)?;
-        self.renderer.flush(true)?;
+        self.renderer.flush_full()?;
         Terminal::flush()?;
         Ok(())
     }

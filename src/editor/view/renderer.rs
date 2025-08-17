@@ -19,18 +19,35 @@ impl Renderer {
         self.lines.push(String::from(line));
     }
 
-    pub fn flush(&mut self, force_render: bool) -> Result<(), Error> {
+    pub fn flush_diff(&mut self) -> Result<(), Error> {
         Terminal::save_cursor_position()?;
 
         for i in 0..max(self.lines.len(), self.prev_lines.len()) as usize {
             let line = self.lines.get(i);
             let prev_line = self.prev_lines.get(i);
 
-            if line != prev_line || force_render {
+            if line != prev_line {
                 Terminal::move_to(Position { x: 0, y: i as u16 })?;
                 Terminal::clear_line()?;
                 Terminal::print(&line.unwrap_or(&String::from("")))?;
             }
+        }
+
+        Terminal::restore_cursor_position()?;
+        self.prev_lines = self.lines.clone();
+        self.lines.clear();
+        Ok(())
+    }
+
+    pub fn flush_full(&mut self) -> Result<(), Error> {
+        Terminal::save_cursor_position()?;
+
+        for i in 0..max(self.lines.len(), self.prev_lines.len()) as usize {
+            let line = self.lines.get(i);
+
+            Terminal::move_to(Position { x: 0, y: i as u16 })?;
+            Terminal::clear_line()?;
+            Terminal::print(&line.unwrap_or(&String::from("")))?;
         }
 
         Terminal::restore_cursor_position()?;
