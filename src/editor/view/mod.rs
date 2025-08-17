@@ -40,7 +40,7 @@ impl View {
         Ok(())
     }
 
-    pub fn render(&mut self, buffer: &Buffer) -> Result<(), Error> {
+    pub fn render_diff(&mut self, buffer: &Buffer) -> Result<(), Error> {
         self.render_content(buffer)?;
         self.render_cursor(buffer)?;
         self.renderer.flush_diff()?;
@@ -48,7 +48,7 @@ impl View {
         Ok(())
     }
 
-    pub fn force_render(&mut self, buffer: &Buffer) -> Result<(), Error> {
+    pub fn render_full(&mut self, buffer: &Buffer) -> Result<(), Error> {
         self.render_content(buffer)?;
         self.render_cursor(buffer)?;
         self.renderer.flush_full()?;
