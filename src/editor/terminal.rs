@@ -1,14 +1,14 @@
-use std::io::{Error, Write};
-
 use super::utility::{Position, Size};
 use crossterm::{
     cursor::{MoveTo, RestorePosition, SavePosition},
     execute, queue,
+    style::Print,
     terminal::{
         self, Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode,
         enable_raw_mode,
     },
 };
+use std::io::{Error, Write};
 
 pub struct Terminal;
 
@@ -46,9 +46,8 @@ impl Terminal {
         queue!(std::io::stdout(), MoveTo(pos.x, pos.y))
     }
 
-    pub fn println(line: &str) -> Result<(), Error> {
-        print!("{line}\r\n");
-        Ok(())
+    pub fn print(line: &str) -> Result<(), Error> {
+        queue!(std::io::stdout(), Print(line))
     }
 
     pub fn save_cursor_position() -> Result<(), Error> {
