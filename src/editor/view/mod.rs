@@ -3,17 +3,22 @@ use super::{
     terminal::Terminal,
     utility::{Position, Size},
 };
+use renderer::Renderer;
 use std::cmp::min;
 use std::io::Error;
 
+mod renderer;
+
 pub struct View {
     size: Size,
+    renderer: Renderer,
 }
 
 impl View {
     pub fn new() -> Result<View, Error> {
         Ok(View {
             size: Size::default(),
+            renderer: Renderer::new(),
         })
     }
 
@@ -35,10 +40,10 @@ impl View {
         Ok(())
     }
 
-    pub fn render(&self, buffer: &Buffer) -> Result<(), Error> {
-        Terminal::clear_screen()?;
-        self.render_content_full(buffer)?;
+    pub fn render(&mut self, buffer: &Buffer, force_render: bool) -> Result<(), Error> {
+        self.render_content(buffer)?;
         self.render_cursor(buffer)?;
+        self.renderer.flush(force_render)?;
         Terminal::flush()?;
         Ok(())
     }
@@ -53,17 +58,14 @@ impl View {
         Ok(())
     }
 
-    fn render_content_full(&self, buffer: &Buffer) -> Result<(), Error> {
-        Terminal::save_cursor_position()?;
+    fn render_content(&mut self, buffer: &Buffer) -> Result<(), Error> {
         let Size { width, height } = self.size;
-        Terminal::move_to(Position { x: 0, y: 0 })?;
         for i in 0..min(buffer.get_line_count(), height as usize) {
             let mut line: String = buffer.get_line(i).unwrap().collect();
             line.truncate(width as usize);
-            let truncated_line = &line.trim_end_matches(&['\r', '\n']);
-            Terminal::println(truncated_line)?;
+            let truncated_line = line.trim_end_matches(&['\r', '\n']);
+            self.renderer.render(String::from(truncated_line));
         }
-        Terminal::restore_cursor_position()?;
         Ok(())
     }
 }

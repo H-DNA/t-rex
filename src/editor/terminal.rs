@@ -58,4 +58,8 @@ impl Terminal {
     pub fn restore_cursor_position() -> Result<(), Error> {
         queue!(std::io::stdout(), RestorePosition)
     }
+
+    pub fn clear_line() -> Result<(), Error> {
+        queue!(std::io::stdout(), Clear(ClearType::CurrentLine))
+    }
 }
