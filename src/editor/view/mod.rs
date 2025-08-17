@@ -40,18 +40,18 @@ impl View {
         Ok(())
     }
 
-    pub fn render_diff(&mut self, buffer: &Buffer) -> Result<(), Error> {
+    pub fn render_incremental(&mut self, buffer: &Buffer) -> Result<(), Error> {
         self.render_content(buffer)?;
         self.render_cursor(buffer)?;
-        self.renderer.flush_diff()?;
+        self.renderer.flush_changes()?;
         Terminal::flush()?;
         Ok(())
     }
 
-    pub fn render_full(&mut self, buffer: &Buffer) -> Result<(), Error> {
+    pub fn force_render_all(&mut self, buffer: &Buffer) -> Result<(), Error> {
         self.render_content(buffer)?;
         self.render_cursor(buffer)?;
-        self.renderer.flush_full()?;
+        self.renderer.flush_all()?;
         Terminal::flush()?;
         Ok(())
     }

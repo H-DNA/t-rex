@@ -19,7 +19,7 @@ impl Renderer {
         self.lines.push(String::from(line));
     }
 
-    pub fn flush_diff(&mut self) -> Result<(), Error> {
+    pub fn flush_changes(&mut self) -> Result<(), Error> {
         Terminal::save_cursor_position()?;
 
         for i in 0..max(self.lines.len(), self.prev_lines.len()) as usize {
@@ -39,7 +39,7 @@ impl Renderer {
         Ok(())
     }
 
-    pub fn flush_full(&mut self) -> Result<(), Error> {
+    pub fn flush_all(&mut self) -> Result<(), Error> {
         Terminal::save_cursor_position()?;
 
         for i in 0..max(self.lines.len(), self.prev_lines.len()) as usize {
