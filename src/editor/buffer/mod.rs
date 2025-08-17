@@ -41,10 +41,34 @@ impl Buffer {
 
     pub fn move_cursor(&mut self, direction: Direction) {
         match direction {
-            Direction::Up => self.cursor.y = self.cursor.y.saturating_sub(1),
-            Direction::Down => self.cursor.y += 1,
+            Direction::Up => {
+                if self.cursor.y == 0 {
+                    return;
+                }
+                self.cursor.y -= 1;
+                let line_length = self.get_line_length(self.cursor.y).unwrap_or(0);
+                if self.cursor.x >= line_length {
+                    self.cursor.x = line_length;
+                }
+            }
+            Direction::Down => {
+                let line_count = self.get_line_count();
+                if self.cursor.y + 1 >= line_count {
+                    return;
+                }
+                self.cursor.y += 1;
+                let line_length = self.get_line_length(self.cursor.y).unwrap_or(0);
+                if self.cursor.x >= line_length {
+                    self.cursor.x = line_length;
+                }
+            }
             Direction::Left => self.cursor.x = self.cursor.x.saturating_sub(1),
-            Direction::Right => self.cursor.x += 1,
+            Direction::Right => {
+                let line_length = self.get_line_length(self.cursor.y).unwrap_or(0);
+                if self.cursor.x < line_length {
+                    self.cursor.x += 1;
+                }
+            }
         }
     }
 
@@ -54,5 +78,11 @@ impl Buffer {
 
     pub fn get_line_count(&self) -> usize {
         self.text.lines().count()
+    }
+
+    pub fn get_line_length(&self, line: usize) -> Option<usize> {
+        let line: String = self.text.get_line(line)?.chars().collect();
+        let line = line.trim_end_matches(&['\r', '\n']);
+        Some(line.len())
     }
 }
