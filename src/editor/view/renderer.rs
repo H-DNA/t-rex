@@ -15,8 +15,8 @@ impl Renderer {
         }
     }
 
-    pub fn render(&mut self, line: String) {
-        self.lines.push(line);
+    pub fn render(&mut self, line: &str) {
+        self.lines.push(String::from(line));
     }
 
     pub fn flush(&mut self, force_render: bool) -> Result<(), Error> {

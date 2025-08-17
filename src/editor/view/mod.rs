@@ -60,11 +60,12 @@ impl View {
 
     fn render_content(&mut self, buffer: &Buffer) -> Result<(), Error> {
         let Size { width, height } = self.size;
-        for i in 0..min(buffer.get_line_count(), height as usize) {
+        let lines = buffer.get_line_count();
+        for i in 0..min(lines, height as usize) {
             let mut line: String = buffer.get_line(i).unwrap().collect();
             line.truncate(width as usize);
             let truncated_line = line.trim_end_matches(&['\r', '\n']);
-            self.renderer.render(String::from(truncated_line));
+            self.renderer.render(truncated_line);
         }
         Ok(())
     }
