@@ -40,10 +40,18 @@ impl View {
         Ok(())
     }
 
-    pub fn render(&mut self, buffer: &Buffer, force_render: bool) -> Result<(), Error> {
+    pub fn render(&mut self, buffer: &Buffer) -> Result<(), Error> {
         self.render_content(buffer)?;
         self.render_cursor(buffer)?;
-        self.renderer.flush(force_render)?;
+        self.renderer.flush(false)?;
+        Terminal::flush()?;
+        Ok(())
+    }
+
+    pub fn force_render(&mut self, buffer: &Buffer) -> Result<(), Error> {
+        self.render_content(buffer)?;
+        self.render_cursor(buffer)?;
+        self.renderer.flush(true)?;
         Terminal::flush()?;
         Ok(())
     }

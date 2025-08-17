@@ -56,17 +56,17 @@ impl CoreEditor {
     }
 
     fn repl(&mut self) -> Result<(), Error> {
-        self.view.render(&self.buffer, true)?;
+        self.view.force_render(&self.buffer)?;
 
         while !self.should_quit {
             match read()? {
                 Event::Key(event) => {
                     self.handle_key(event)?;
-                    self.view.render(&self.buffer, false)?;
+                    self.view.render(&self.buffer)?;
                 }
                 Event::Resize(width, height) => {
                     self.view.set_size(Size { width, height });
-                    self.view.render(&self.buffer, true)?;
+                    self.view.force_render(&self.buffer)?;
                 }
                 _ => {}
             }
