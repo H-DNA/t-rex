@@ -31,6 +31,14 @@ impl Buffer {
         self.cursor
     }
 
+    pub fn get_path(&self) -> Option<&str> {
+        if let Some(ref path) = self.path {
+            path.to_str()
+        } else {
+            None
+        }
+    }
+
     pub fn move_cursor(&mut self, direction: Direction) {
         match direction {
             Direction::Up => self.cursor.y = self.cursor.y.saturating_sub(1),
