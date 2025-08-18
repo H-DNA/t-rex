@@ -87,7 +87,7 @@ impl Buffer {
     }
 
     pub fn get_line_count(&self) -> usize {
-        self.text.lines().count() - 1
+        self.text.len_lines() - 1
     }
 
     pub fn get_line_length(&self, line: usize) -> Option<usize> {
