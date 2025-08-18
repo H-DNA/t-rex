@@ -1,4 +1,5 @@
 use super::utility::{Direction, Location};
+use crossterm::cursor;
 use ropey::Rope;
 use std::{
     cmp::min,
@@ -76,7 +77,38 @@ impl Buffer {
         self.move_cursor_to_start_of_line(cursor.y + 1);
     }
 
-    pub fn type_backspace(&mut self) {}
+    pub fn type_backspace(&mut self) {
+        let cursor = self.get_cursor();
+        if cursor.y == 0 && cursor.x == 0 {
+            return;
+        }
+        if cursor.x == 0 {
+            self.move_cursor_to_end_of_line(cursor.y - 1);
+            let prev_line_char_idx = self.text.line_to_char(cursor.y - 1);
+            let prev_line = self.get_line(cursor.y - 1).unwrap();
+            let start_char_idx =
+                prev_line_char_idx + prev_line.trim_matches(&['\r', '\n']).chars().count();
+            let end_char_idx = prev_line_char_idx + prev_line.chars().count();
+            self.text.remove(start_char_idx..end_char_idx);
+        } else {
+            self.move_cursor(Direction::Left);
+            let cur_line_char_idx = self.text.line_to_char(cursor.y);
+            let cur_line = self.get_line(cursor.y).unwrap();
+            let start_char_idx = cur_line
+                .graphemes(true)
+                .take(cursor.x - 1)
+                .map(|g| g.chars().count())
+                .sum::<usize>()
+                + cur_line_char_idx;
+            let end_char_idx = cur_line
+                .graphemes(true)
+                .take(cursor.x)
+                .map(|g| g.chars().count())
+                .sum::<usize>()
+                + cur_line_char_idx;
+            self.text.remove(start_char_idx..end_char_idx);
+        }
+    }
 
     pub fn type_delete(&mut self) {}
 
@@ -112,6 +144,15 @@ impl Buffer {
     fn move_cursor_to_start_of_line(&mut self, line_idx: usize) {
         self.raw_cursor_location.y = line_idx;
         self.raw_cursor_location.x = 0;
+    }
+
+    fn move_cursor_to_end_of_line(&mut self, line_idx: usize) {
+        let line_length = self.get_line_length(line_idx);
+        if line_length.is_none() {
+            return;
+        }
+        self.raw_cursor_location.x = line_length.unwrap();
+        self.raw_cursor_location.y = line_idx;
     }
 
     fn clamp_cursor_x(&mut self) {
