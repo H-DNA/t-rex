@@ -81,8 +81,8 @@ impl Buffer {
         min(self.raw_cursor_location.x, line_length)
     }
 
-    pub fn get_line(&self, line: usize) -> Option<Chars> {
-        Some(self.text.get_line(line)?.chars())
+    pub fn get_line(&self, line: usize) -> Option<String> {
+        Some(self.text.get_line(line)?.chars().collect())
     }
 
     pub fn get_line_count(&self) -> usize {

@@ -70,7 +70,7 @@ impl View {
         let Size { width, height } = self.size;
         let lines = buffer.get_line_count();
         for i in 0..min(lines, height as usize) {
-            let mut line: String = buffer.get_line(i).unwrap().collect();
+            let mut line: String = buffer.get_line(i).unwrap();
             line.truncate(width as usize);
             let truncated_line = line.trim_end_matches(&['\r', '\n']);
             self.renderer.render(truncated_line);
