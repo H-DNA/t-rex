@@ -1,11 +1,13 @@
 use super::{
     buffer::Buffer,
     terminal::Terminal,
-    utility::{Position, Size},
+    utility::{Location, Position, Size},
 };
 use renderer::Renderer;
 use std::cmp::min;
 use std::io::Error;
+use unicode_segmentation::UnicodeSegmentation;
+use unicode_width::UnicodeWidthStr;
 
 mod renderer;
 
@@ -57,12 +59,18 @@ impl View {
     }
 
     fn render_cursor(&self, buffer: &Buffer) -> Result<(), Error> {
-        let loc = buffer.get_cursor();
-        let pos = Position {
-            x: loc.x as u16,
-            y: loc.y as u16,
-        };
-        Terminal::move_to(pos)?;
+        let Location { x, y: row } = buffer.get_cursor();
+        let cur_line = buffer.get_line(row);
+        if cur_line.is_none() {
+            return Ok(());
+        }
+        let cur_line = cur_line.unwrap();
+        let prev_graphemes = cur_line.graphemes(true).take(x);
+        let col: usize = prev_graphemes.map(|grapheme| grapheme.width()).sum();
+        Terminal::move_to(Position {
+            x: col as u16,
+            y: row as u16,
+        })?;
         Ok(())
     }
 
@@ -70,9 +78,13 @@ impl View {
         let Size { width, height } = self.size;
         let lines = buffer.get_line_count();
         for i in 0..min(lines, height as usize) {
-            let mut line: String = buffer.get_line(i).unwrap();
-            line.truncate(width as usize);
-            let truncated_line = line.trim_end_matches(&['\r', '\n']);
+            let line: String = buffer.get_line(i).unwrap();
+            let truncated_line = line
+                .graphemes(true)
+                .take(width as usize)
+                .collect::<Vec<_>>()
+                .join("");
+            let truncated_line = truncated_line.trim_end_matches(&['\r', '\n']);
             self.renderer.render(truncated_line);
         }
         for _ in min(lines, height as usize)..height as usize {

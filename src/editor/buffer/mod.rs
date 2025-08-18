@@ -6,6 +6,7 @@ use std::{
     io::{BufReader, Error},
     path::PathBuf,
 };
+use unicode_segmentation::UnicodeSegmentation;
 
 pub struct Buffer {
     path: Option<PathBuf>,
@@ -92,6 +93,6 @@ impl Buffer {
     pub fn get_line_length(&self, line: usize) -> Option<usize> {
         let line: String = self.text.get_line(line)?.chars().collect();
         let line = line.trim_end_matches(&['\r', '\n']);
-        Some(line.len())
+        Some(line.graphemes(true).count())
     }
 }
