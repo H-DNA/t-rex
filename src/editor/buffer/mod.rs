@@ -110,7 +110,16 @@ impl Buffer {
         }
     }
 
-    pub fn type_delete(&mut self) {}
+    pub fn type_delete(&mut self) {
+        let cursor = self.get_cursor();
+        let cur_line_length = self.get_line_length(cursor.y).unwrap();
+        if cur_line_length <= cursor.x {
+            self.move_cursor_to_start_of_line(cursor.y + 1);
+        } else {
+            self.move_cursor(Direction::Right);
+        }
+        self.type_backspace();
+    }
 
     pub fn move_cursor(&mut self, direction: Direction) {
         match direction {
