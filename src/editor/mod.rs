@@ -91,6 +91,7 @@ impl CoreEditor {
             KeyCode::Down => self.buffer.move_cursor(Direction::Down),
             KeyCode::Left => self.buffer.move_cursor(Direction::Left),
             KeyCode::Right => self.buffer.move_cursor(Direction::Right),
+            KeyCode::Char(c) => self.buffer.type_char(c),
             _ => {}
         }
 

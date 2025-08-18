@@ -1,5 +1,5 @@
 use super::utility::{Direction, Location};
-use ropey::{Rope, iter::Chars};
+use ropey::Rope;
 use std::{
     cmp::min,
     fs::File,
@@ -39,6 +39,23 @@ impl Buffer {
         } else {
             None
         }
+    }
+
+    pub fn type_char(&mut self, c: char) {
+        let cursor = self.get_cursor();
+        let cur_line = self.get_line(cursor.y);
+        if cur_line.is_none() {
+            return;
+        }
+        let cur_line = cur_line.unwrap();
+        let char_idx = cur_line
+            .graphemes(true)
+            .take(cursor.x)
+            .map(|g| g.chars().count())
+            .sum::<usize>()
+            + self.text.line_to_char(cursor.y);
+        self.text.insert_char(char_idx, c);
+        self.move_cursor(Direction::Right);
     }
 
     pub fn move_cursor(&mut self, direction: Direction) {
