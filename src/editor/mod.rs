@@ -92,6 +92,9 @@ impl CoreEditor {
             KeyCode::Left => self.buffer.move_cursor(Direction::Left),
             KeyCode::Right => self.buffer.move_cursor(Direction::Right),
             KeyCode::Char(c) => self.buffer.type_char(c),
+            KeyCode::Enter => self.buffer.type_enter(),
+            KeyCode::Delete => self.buffer.type_delete(),
+            KeyCode::Backspace => self.buffer.type_backspace(),
             _ => {}
         }
 

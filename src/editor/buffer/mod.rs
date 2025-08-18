@@ -58,6 +58,27 @@ impl Buffer {
         self.move_cursor(Direction::Right);
     }
 
+    pub fn type_enter(&mut self) {
+        let cursor = self.get_cursor();
+        let cur_line = self.get_line(cursor.y);
+        if cur_line.is_none() {
+            return;
+        }
+        let cur_line = cur_line.unwrap();
+        let char_idx = cur_line
+            .graphemes(true)
+            .take(cursor.x)
+            .map(|g| g.chars().count())
+            .sum::<usize>()
+            + self.text.line_to_char(cursor.y);
+        self.text.insert_char(char_idx, '\n');
+        self.move_cursor_to_start_of_line(cursor.y + 1);
+    }
+
+    pub fn type_backspace(&mut self) {}
+
+    pub fn type_delete(&mut self) {}
+
     pub fn move_cursor(&mut self, direction: Direction) {
         match direction {
             Direction::Up => {
@@ -83,6 +104,11 @@ impl Buffer {
                 }
             }
         }
+    }
+
+    fn move_cursor_to_start_of_line(&mut self, line_idx: usize) {
+        self.raw_cursor_location.y = line_idx;
+        self.raw_cursor_location.x = 0;
     }
 
     fn get_effective_cursor_location(&self) -> Location {
