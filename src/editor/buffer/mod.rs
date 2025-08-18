@@ -56,6 +56,7 @@ impl Buffer {
             + self.text.line_to_char(cursor.y);
         self.text.insert_char(char_idx, c);
         self.move_cursor(Direction::Right);
+        self.clamp_cursor_x();
     }
 
     pub fn type_enter(&mut self) {
@@ -94,7 +95,9 @@ impl Buffer {
                 }
                 self.raw_cursor_location.y += 1;
             }
-            Direction::Left => self.raw_cursor_location.x = self.clamp_cursor_x().saturating_sub(1),
+            Direction::Left => {
+                self.raw_cursor_location.x = self.get_clamped_cursor_x().saturating_sub(1)
+            }
             Direction::Right => {
                 let line_length = self
                     .get_line_length(self.raw_cursor_location.y)
@@ -111,14 +114,18 @@ impl Buffer {
         self.raw_cursor_location.x = 0;
     }
 
+    fn clamp_cursor_x(&mut self) {
+        self.raw_cursor_location.x = self.get_clamped_cursor_x();
+    }
+
     fn get_effective_cursor_location(&self) -> Location {
         Location {
-            x: self.clamp_cursor_x(),
+            x: self.get_clamped_cursor_x(),
             y: self.raw_cursor_location.y,
         }
     }
 
-    fn clamp_cursor_x(&self) -> usize {
+    fn get_clamped_cursor_x(&self) -> usize {
         let line_length = self
             .get_line_length(self.raw_cursor_location.y)
             .unwrap_or(0);
