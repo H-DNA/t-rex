@@ -13,6 +13,7 @@ mod renderer;
 
 pub struct View {
     size: Size,
+    origin: Location,
     renderer: Renderer,
 }
 
@@ -20,6 +21,7 @@ impl View {
     pub fn new() -> Result<View, Error> {
         Ok(View {
             size: Size::default(),
+            origin: Location::default(),
             renderer: Renderer::new(),
         })
     }
@@ -58,7 +60,7 @@ impl View {
         Ok(())
     }
 
-    fn render_cursor(&self, buffer: &Buffer) -> Result<(), Error> {
+    fn render_cursor(&mut self, buffer: &Buffer) -> Result<(), Error> {
         let Location { x, y: row } = buffer.get_cursor();
         let cur_line = buffer.get_line(row);
         if cur_line.is_none() {
@@ -67,29 +69,56 @@ impl View {
         let cur_line = cur_line.unwrap();
         let prev_graphemes = cur_line.graphemes(true).take(x);
         let col: usize = prev_graphemes.map(|grapheme| grapheme.width()).sum();
+        if col > self.get_right_index() {
+            self.origin.x = col.saturating_sub(self.size.width as usize);
+        } else if col < self.get_left_index() {
+            self.origin.x = col;
+        }
+        if row > self.get_bottom_index() {
+            self.origin.y = row.saturating_sub(self.size.height as usize);
+        } else if row < self.get_top_index() {
+            self.origin.y = row;
+        }
         Terminal::move_to(Position {
-            x: col as u16,
-            y: row as u16,
+            x: (col - self.origin.x) as u16,
+            y: (row - self.origin.y) as u16,
         })?;
         Ok(())
     }
 
     fn render_content(&mut self, buffer: &Buffer) -> Result<(), Error> {
-        let Size { width, height } = self.size;
-        let lines = buffer.get_line_count();
-        for i in 0..min(lines, height as usize) {
+        let line_count = buffer.get_line_count();
+        let last_idx = min(self.get_bottom_index() + 1, line_count);
+        for i in self.get_top_index()..last_idx {
             let line: String = buffer.get_line(i).unwrap();
             let truncated_line = line
                 .graphemes(true)
-                .take(width as usize)
+                .skip(self.get_left_index())
+                .take(self.size.width as usize)
                 .collect::<Vec<_>>()
                 .join("");
             let truncated_line = truncated_line.trim_end_matches(&['\r', '\n']);
             self.renderer.render(truncated_line);
         }
-        for _ in min(lines, height as usize)..height as usize {
+        for _ in last_idx..=self.get_bottom_index() as usize {
             self.renderer.render("~");
         }
         Ok(())
+    }
+
+    fn get_top_index(&self) -> usize {
+        self.origin.y
+    }
+
+    fn get_left_index(&self) -> usize {
+        self.origin.x
+    }
+
+    fn get_bottom_index(&self) -> usize {
+        self.origin.y + self.size.height as usize - 1
+    }
+
+    fn get_right_index(&self) -> usize {
+        self.origin.x + self.size.width as usize - 1
     }
 }
