@@ -45,6 +45,7 @@ impl View {
     }
 
     pub fn render_incremental(&mut self, buffer: &Buffer) -> Result<(), Error> {
+        self.scroll_cursor_into_view(buffer);
         self.render_content(buffer)?;
         self.render_cursor(buffer)?;
         self.renderer.flush_changes()?;
@@ -53,6 +54,7 @@ impl View {
     }
 
     pub fn force_render_all(&mut self, buffer: &Buffer) -> Result<(), Error> {
+        self.scroll_cursor_into_view(buffer);
         self.render_content(buffer)?;
         self.render_cursor(buffer)?;
         self.renderer.flush_all()?;
@@ -60,10 +62,10 @@ impl View {
         Ok(())
     }
 
-    fn render_cursor(&mut self, buffer: &Buffer) -> Result<(), Error> {
+    fn scroll_cursor_into_view(&mut self, buffer: &Buffer) {
         let render_pos = self.get_render_position_of_cursor(buffer);
         if render_pos.is_none() {
-            return Ok(());
+            return;
         }
         let RenderPosition { col, row } = render_pos.unwrap();
         if col > self.get_rightmost_col() {
@@ -76,6 +78,14 @@ impl View {
         } else if row < self.get_topmost_row() {
             self.origin.row = row;
         }
+    }
+
+    fn render_cursor(&self, buffer: &Buffer) -> Result<(), Error> {
+        let render_pos = self.get_render_position_of_cursor(buffer);
+        if render_pos.is_none() {
+            return Ok(());
+        }
+        let RenderPosition { col, row } = render_pos.unwrap();
         Terminal::move_to(TerminalPosition {
             col: (col - self.origin.col) as u16,
             row: (row - self.origin.row) as u16,
