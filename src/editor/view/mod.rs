@@ -95,7 +95,7 @@ impl View {
 
     fn get_render_position_of_cursor(&self, buffer: &Buffer) -> Option<RenderPosition> {
         let GraphemeLocation { offset, line } = buffer.get_grapheme_location();
-        let cur_line = buffer.get_line(line);
+        let cur_line = self.get_renderable_line(buffer, line);
         if cur_line.is_none() {
             return None;
         }
@@ -109,20 +109,40 @@ impl View {
         let line_count = buffer.get_line_count();
         let last_idx = min(self.get_bottommost_row() + 1, line_count);
         for i in self.get_topmost_row()..last_idx {
-            let line: String = buffer.get_line(i).unwrap();
-            let truncated_line = line
-                .graphemes(true)
-                .skip(self.get_leftmost_col())
-                .take(self.size.width as usize)
-                .collect::<Vec<_>>()
-                .join("");
-            let truncated_line = truncated_line.trim_end_matches(&['\r', '\n']);
-            self.renderer.render(truncated_line);
+            let line = self.get_renderable_line(buffer, i).unwrap_or("".into());
+            self.renderer.render(&line);
         }
         for _ in last_idx..=self.get_bottommost_row() as usize {
             self.renderer.render("~");
         }
         Ok(())
+    }
+
+    fn get_renderable_line(&self, buffer: &Buffer, line_idx: usize) -> Option<String> {
+        let line = buffer.get_line(line_idx)?;
+        let renderable_line = line
+            .graphemes(true)
+            .map(View::get_renderable_grapheme)
+            .collect::<String>();
+        let truncated_line = renderable_line
+            .graphemes(true)
+            .skip(self.get_leftmost_col())
+            .take(self.size.width as usize)
+            .collect::<String>();
+        Some(truncated_line)
+    }
+
+    fn get_renderable_grapheme<'a>(grapheme: &'a str) -> &'a str {
+        if grapheme == " " || grapheme == "\t" {
+            return " ";
+        }
+        if grapheme.chars().nth(0).unwrap_or(' ').is_control() {
+            return "▯";
+        }
+        if grapheme.width() == 0 {
+            return "·";
+        }
+        return grapheme;
     }
 
     fn get_topmost_row(&self) -> usize {

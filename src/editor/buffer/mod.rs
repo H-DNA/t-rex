@@ -187,7 +187,8 @@ impl Buffer {
     }
 
     pub fn get_line(&self, line: usize) -> Option<String> {
-        Some(self.text.get_line(line)?.chars().collect())
+        let line: String = self.text.get_line(line)?.chars().collect();
+        Some(line.trim_end_matches(&['\r', '\n']).into())
     }
 
     pub fn get_line_count(&self) -> usize {
@@ -195,8 +196,7 @@ impl Buffer {
     }
 
     pub fn get_line_length(&self, line: usize) -> Option<usize> {
-        let line: String = self.text.get_line(line)?.chars().collect();
-        let line = line.trim_end_matches(&['\r', '\n']);
+        let line = self.get_line(line)?;
         Some(line.graphemes(true).count())
     }
 }
