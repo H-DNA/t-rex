@@ -95,6 +95,7 @@ impl CoreEditor {
             KeyCode::Enter => self.buffer.type_enter(),
             KeyCode::Delete => self.buffer.type_delete(),
             KeyCode::Backspace => self.buffer.type_backspace(),
+            KeyCode::Tab => self.buffer.type_char('\t'),
             _ => {}
         }
 
