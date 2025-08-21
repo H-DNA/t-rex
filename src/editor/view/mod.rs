@@ -70,7 +70,7 @@ impl View {
         let RenderPosition { col, row } = render_pos.unwrap();
         if col > self.get_rightmost_col() {
             self.origin.col = col.saturating_sub(self.size.width as usize);
-        } else if col < self.get_leftmose_col() {
+        } else if col < self.get_leftmost_col() {
             self.origin.col = col;
         }
         if row > self.get_bottommost_row() {
@@ -112,7 +112,7 @@ impl View {
             let line: String = buffer.get_line(i).unwrap();
             let truncated_line = line
                 .graphemes(true)
-                .skip(self.get_leftmose_col())
+                .skip(self.get_leftmost_col())
                 .take(self.size.width as usize)
                 .collect::<Vec<_>>()
                 .join("");
@@ -129,7 +129,7 @@ impl View {
         self.origin.row
     }
 
-    fn get_leftmose_col(&self) -> usize {
+    fn get_leftmost_col(&self) -> usize {
         self.origin.col
     }
 
