@@ -1,5 +1,9 @@
-use super::{buffer::Buffer, terminal::Terminal, utility::TerminalSize};
-use components::{TerminalArea, text_area::TextArea};
+use super::{
+    buffer::Buffer,
+    terminal::Terminal,
+    utility::{TerminalArea, TerminalPosition, TerminalSize},
+};
+use components::text_area::TextArea;
 use renderer::Renderer;
 use std::io::Error;
 
@@ -54,12 +58,13 @@ impl View {
     }
 
     fn render_components(&mut self, buffer: &Buffer) -> Result<(), Error> {
-        let text_area = TerminalArea {
-            top: 0,
-            left: 0,
-            right: self.size.width - 1,
-            bottom: self.size.height - 1,
-        };
+        let text_area = TerminalArea::new(
+            TerminalPosition { row: 0, col: 0 },
+            TerminalSize {
+                width: self.size.width,
+                height: self.size.height,
+            },
+        );
         self.text_area
             .render(&mut self.renderer, buffer, text_area)?;
         Ok(())

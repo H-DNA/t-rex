@@ -34,3 +34,47 @@ pub enum Direction {
     Up,
     Down,
 }
+
+// A struct representing the area of a terminal assigned to a UI component
+#[derive(Default, Clone, Copy)]
+pub struct TerminalArea {
+    pub top: u16,
+    pub left: u16,
+    pub bottom: u16,
+    pub right: u16,
+}
+
+impl TerminalArea {
+    pub fn new(origin: TerminalPosition, size: TerminalSize) -> TerminalArea {
+        TerminalArea {
+            top: origin.row,
+            left: origin.col,
+            bottom: origin.row + size.height - 1,
+            right: origin.col + size.width - 1,
+        }
+    }
+
+    pub fn get_top(&self) -> u16 {
+        self.top
+    }
+
+    pub fn get_left(&self) -> u16 {
+        self.left
+    }
+
+    pub fn get_right(&self) -> u16 {
+        self.right
+    }
+
+    pub fn get_bottom(&self) -> u16 {
+        self.bottom
+    }
+
+    pub fn get_width(&self) -> u16 {
+        self.right - self.left + 1
+    }
+
+    pub fn get_height(&self) -> u16 {
+        self.bottom - self.top + 1
+    }
+}

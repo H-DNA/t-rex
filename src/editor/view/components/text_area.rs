@@ -1,8 +1,7 @@
-use super::TerminalArea;
 use crate::editor::{
     buffer::Buffer,
     terminal::Terminal,
-    utility::{GraphemeLocation, RenderPosition, TerminalPosition},
+    utility::{GraphemeLocation, RenderPosition, TerminalArea, TerminalPosition},
     view::renderer::Renderer,
 };
 use std::cmp::min;
