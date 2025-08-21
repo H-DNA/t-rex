@@ -1,7 +1,7 @@
 use super::{
     buffer::Buffer,
     terminal::Terminal,
-    utility::{Location, Position, Size},
+    utility::{GraphemeLocation, RenderPosition, TerminalPosition, TerminalSize},
 };
 use renderer::Renderer;
 use std::cmp::min;
@@ -12,21 +12,21 @@ use unicode_width::UnicodeWidthStr;
 mod renderer;
 
 pub struct View {
-    size: Size,
-    origin: Location,
+    size: TerminalSize,
+    origin: RenderPosition,
     renderer: Renderer,
 }
 
 impl View {
     pub fn new() -> Result<View, Error> {
         Ok(View {
-            size: Size::default(),
-            origin: Location::default(),
+            size: TerminalSize::default(),
+            origin: RenderPosition::default(),
             renderer: Renderer::new(),
         })
     }
 
-    pub fn set_size(&mut self, size: Size) {
+    pub fn set_size(&mut self, size: TerminalSize) {
         self.size = size;
     }
 
@@ -61,73 +61,73 @@ impl View {
     }
 
     fn render_cursor(&mut self, buffer: &Buffer) -> Result<(), Error> {
-        let loc = self.get_cursor_location(buffer);
-        if loc.is_none() {
+        let render_pos = self.get_render_position_of_cursor(buffer);
+        if render_pos.is_none() {
             return Ok(());
         }
-        let Location { x, y } = loc.unwrap();
-        if x > self.get_right_index() {
-            self.origin.x = x.saturating_sub(self.size.width as usize);
-        } else if x < self.get_left_index() {
-            self.origin.x = x;
+        let RenderPosition { col, row } = render_pos.unwrap();
+        if col > self.get_rightmost_col() {
+            self.origin.col = col.saturating_sub(self.size.width as usize);
+        } else if col < self.get_leftmose_col() {
+            self.origin.col = col;
         }
-        if y > self.get_bottom_index() {
-            self.origin.y = y.saturating_sub(self.size.height as usize);
-        } else if y < self.get_top_index() {
-            self.origin.y = y;
+        if row > self.get_bottommost_row() {
+            self.origin.row = row.saturating_sub(self.size.height as usize);
+        } else if row < self.get_topmost_row() {
+            self.origin.row = row;
         }
-        Terminal::move_to(Position {
-            x: (x - self.origin.x) as u16,
-            y: (y - self.origin.y) as u16,
+        Terminal::move_to(TerminalPosition {
+            col: (col - self.origin.col) as u16,
+            row: (row - self.origin.row) as u16,
         })?;
         Ok(())
     }
 
-    fn get_cursor_location(&self, buffer: &Buffer) -> Option<Location> {
-        let Location { x, y: row } = buffer.get_cursor();
-        let cur_line = buffer.get_line(row);
+    fn get_render_position_of_cursor(&self, buffer: &Buffer) -> Option<RenderPosition> {
+        let GraphemeLocation { offset, line } = buffer.get_grapheme_location();
+        let cur_line = buffer.get_line(line);
         if cur_line.is_none() {
             return None;
         }
         let cur_line = cur_line.unwrap();
-        let prev_graphemes = cur_line.graphemes(true).take(x);
+        let prev_graphemes = cur_line.graphemes(true).take(offset);
         let col: usize = prev_graphemes.map(|grapheme| grapheme.width()).sum();
-        Some(Location { x: col, y: row })
+        Some(RenderPosition { col, row: line })
     }
 
     fn render_content(&mut self, buffer: &Buffer) -> Result<(), Error> {
         let line_count = buffer.get_line_count();
-        let last_idx = min(self.get_bottom_index() + 1, line_count);
-        for i in self.get_top_index()..last_idx {
+        let last_idx = min(self.get_bottommost_row() + 1, line_count);
+        for i in self.get_topmost_row()..last_idx {
             let line: String = buffer.get_line(i).unwrap();
             let truncated_line = line
                 .graphemes(true)
-                .skip(self.get_left_index())
+                .skip(self.get_leftmose_col())
                 .take(self.size.width as usize)
                 .collect::<Vec<_>>()
                 .join("");
             let truncated_line = truncated_line.trim_end_matches(&['\r', '\n']);
             self.renderer.render(truncated_line);
         }
-        for _ in last_idx..=self.get_bottom_index() as usize {
+        for _ in last_idx..=self.get_bottommost_row() as usize {
             self.renderer.render("~");
         }
         Ok(())
     }
 
-    fn get_top_index(&self) -> usize {
-        self.origin.y
+    fn get_topmost_row(&self) -> usize {
+        self.origin.row
     }
 
-    fn get_left_index(&self) -> usize {
-        self.origin.x
+    fn get_leftmose_col(&self) -> usize {
+        self.origin.col
     }
 
-    fn get_bottom_index(&self) -> usize {
-        self.origin.y + self.size.height as usize - 1
+    fn get_bottommost_row(&self) -> usize {
+        self.origin.row + self.size.height as usize - 1
     }
 
-    fn get_right_index(&self) -> usize {
-        self.origin.x + self.size.width as usize - 1
+    fn get_rightmost_col(&self) -> usize {
+        self.origin.col + self.size.width as usize - 1
     }
 }

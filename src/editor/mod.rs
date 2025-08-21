@@ -2,7 +2,7 @@ use buffer::Buffer;
 use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers, read};
 use std::{io::Error, path::PathBuf};
 use terminal::Terminal;
-use utility::{Direction, Size};
+use utility::{Direction, TerminalSize};
 use view::View;
 
 mod buffer;
@@ -65,7 +65,7 @@ impl CoreEditor {
                     self.view.render_incremental(&self.buffer)?;
                 }
                 Event::Resize(width, height) => {
-                    self.view.set_size(Size { width, height });
+                    self.view.set_size(TerminalSize { width, height });
                     self.view.force_render_all(&self.buffer)?;
                 }
                 _ => {}
@@ -87,10 +87,10 @@ impl CoreEditor {
             KeyCode::Char('q') if modifiers.contains(KeyModifiers::CONTROL) => {
                 self.should_quit = true;
             }
-            KeyCode::Up => self.buffer.move_cursor(Direction::Up),
-            KeyCode::Down => self.buffer.move_cursor(Direction::Down),
-            KeyCode::Left => self.buffer.move_cursor(Direction::Left),
-            KeyCode::Right => self.buffer.move_cursor(Direction::Right),
+            KeyCode::Up => self.buffer.move_grapheme(Direction::Up),
+            KeyCode::Down => self.buffer.move_grapheme(Direction::Down),
+            KeyCode::Left => self.buffer.move_grapheme(Direction::Left),
+            KeyCode::Right => self.buffer.move_grapheme(Direction::Right),
             KeyCode::Char(c) => self.buffer.type_char(c),
             KeyCode::Enter => self.buffer.type_enter(),
             KeyCode::Delete => self.buffer.type_delete(),

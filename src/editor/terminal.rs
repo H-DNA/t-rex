@@ -1,4 +1,4 @@
-use super::utility::{Position, Size};
+use super::utility::{TerminalPosition, TerminalSize};
 use crossterm::{
     cursor::{MoveTo, RestorePosition, SavePosition},
     execute, queue,
@@ -33,17 +33,17 @@ impl Terminal {
         execute!(std::io::stdout(), LeaveAlternateScreen)
     }
 
-    pub fn get_size() -> Result<Size, Error> {
+    pub fn get_size() -> Result<TerminalSize, Error> {
         let (width, height) = terminal::size()?;
-        Ok(Size { width, height })
+        Ok(TerminalSize { width, height })
     }
 
     pub fn clear_screen() -> Result<(), Error> {
         queue!(std::io::stdout(), Clear(ClearType::All))
     }
 
-    pub fn move_to(pos: Position) -> Result<(), Error> {
-        queue!(std::io::stdout(), MoveTo(pos.x, pos.y))
+    pub fn move_to(pos: TerminalPosition) -> Result<(), Error> {
+        queue!(std::io::stdout(), MoveTo(pos.col, pos.row))
     }
 
     pub fn print(line: &str) -> Result<(), Error> {
