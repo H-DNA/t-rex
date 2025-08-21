@@ -103,10 +103,10 @@ impl TextArea {
             let line = self
                 .get_renderable_line(renderer, buffer, area, i)
                 .unwrap_or("".into());
-            renderer.render(&line);
+            renderer.render(&line, i as u16);
         }
-        for _ in last_idx..=self.get_bottommost_row(area) as usize {
-            renderer.render("~");
+        for i in last_idx..=self.get_bottommost_row(area) as usize {
+            renderer.render("~", i as u16);
         }
         Ok(())
     }

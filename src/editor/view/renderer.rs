@@ -15,8 +15,11 @@ impl Renderer {
         }
     }
 
-    pub fn render(&mut self, line: &str) {
-        self.lines.push(String::from(line));
+    pub fn render(&mut self, content: &str, line: u16) {
+        while self.lines.len() <= line as usize {
+            self.lines.push("".into());
+        }
+        self.lines[line as usize] = content.into();
     }
 
     pub fn flush_changes(&mut self) -> Result<(), Error> {
