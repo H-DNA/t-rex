@@ -98,15 +98,17 @@ impl TextArea {
         area: TerminalArea,
     ) -> Result<(), Error> {
         let line_count = buffer.get_line_count();
-        let last_idx = min(self.get_bottommost_row(area) + 1, line_count);
-        for i in self.get_topmost_row(area)..last_idx {
+        let top_idx = self.get_topmost_row(area);
+        let bottom_idx = self.get_bottommost_row(area);
+        let last_idx = min(bottom_idx + 1, line_count);
+        for i in top_idx..last_idx {
             let line = self
                 .get_renderable_line(renderer, buffer, area, i)
                 .unwrap_or("".into());
-            renderer.render(&line, area.top + i as u16);
+            renderer.render(&line, area.top + (i - top_idx) as u16);
         }
-        for i in last_idx..=self.get_bottommost_row(area) as usize {
-            renderer.render("~", area.top + i as u16);
+        for i in last_idx..=bottom_idx as usize {
+            renderer.render("~", area.top + (i - top_idx) as u16);
         }
         Ok(())
     }
