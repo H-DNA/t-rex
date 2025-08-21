@@ -30,7 +30,10 @@ impl Renderer {
             let prev_line = self.prev_lines.get(i);
 
             if line != prev_line {
-                Terminal::move_to(TerminalPosition { col: 0, row: i as u16 })?;
+                Terminal::move_to(TerminalPosition {
+                    col: 0,
+                    row: i as u16,
+                })?;
                 Terminal::clear_line()?;
                 Terminal::print(&line.unwrap_or(&String::from("")))?;
             }
@@ -48,7 +51,10 @@ impl Renderer {
         for i in 0..max(self.lines.len(), self.prev_lines.len()) as usize {
             let line = self.lines.get(i);
 
-            Terminal::move_to(TerminalPosition { col: 0, row: i as u16 })?;
+            Terminal::move_to(TerminalPosition {
+                col: 0,
+                row: i as u16,
+            })?;
             Terminal::clear_line()?;
             Terminal::print(&line.unwrap_or(&String::from("")))?;
         }
