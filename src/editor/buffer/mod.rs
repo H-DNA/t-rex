@@ -88,7 +88,7 @@ impl Buffer {
         if grapheme_loc.offset == 0 {
             self.move_grapheme_to_end_of_line(grapheme_loc.line - 1);
             let prev_line_char_idx = self.text.line_to_char(grapheme_loc.line - 1);
-            let prev_line = self.get_line(grapheme_loc.line - 1).unwrap();
+            let prev_line = self.get_raw_line(grapheme_loc.line - 1).unwrap();
             let start_char_idx =
                 prev_line_char_idx + prev_line.trim_matches(&['\r', '\n']).chars().count();
             let end_char_idx = prev_line_char_idx + prev_line.chars().count();
@@ -189,6 +189,10 @@ impl Buffer {
     pub fn get_line(&self, line: usize) -> Option<String> {
         let line: String = self.text.get_line(line)?.chars().collect();
         Some(line.trim_end_matches(&['\r', '\n']).into())
+    }
+
+    fn get_raw_line(&self, line: usize) -> Option<String> {
+        Some(self.text.get_line(line)?.chars().collect())
     }
 
     pub fn get_line_count(&self) -> usize {
