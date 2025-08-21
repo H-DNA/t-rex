@@ -61,29 +61,38 @@ impl View {
     }
 
     fn render_cursor(&mut self, buffer: &Buffer) -> Result<(), Error> {
+        let loc = self.get_cursor_location(buffer);
+        if loc.is_none() {
+            return Ok(());
+        }
+        let Location { x, y } = loc.unwrap();
+        if x > self.get_right_index() {
+            self.origin.x = x.saturating_sub(self.size.width as usize);
+        } else if x < self.get_left_index() {
+            self.origin.x = x;
+        }
+        if y > self.get_bottom_index() {
+            self.origin.y = y.saturating_sub(self.size.height as usize);
+        } else if y < self.get_top_index() {
+            self.origin.y = y;
+        }
+        Terminal::move_to(Position {
+            x: (x - self.origin.x) as u16,
+            y: (y - self.origin.y) as u16,
+        })?;
+        Ok(())
+    }
+
+    fn get_cursor_location(&self, buffer: &Buffer) -> Option<Location> {
         let Location { x, y: row } = buffer.get_cursor();
         let cur_line = buffer.get_line(row);
         if cur_line.is_none() {
-            return Ok(());
+            return None;
         }
         let cur_line = cur_line.unwrap();
         let prev_graphemes = cur_line.graphemes(true).take(x);
         let col: usize = prev_graphemes.map(|grapheme| grapheme.width()).sum();
-        if col > self.get_right_index() {
-            self.origin.x = col.saturating_sub(self.size.width as usize);
-        } else if col < self.get_left_index() {
-            self.origin.x = col;
-        }
-        if row > self.get_bottom_index() {
-            self.origin.y = row.saturating_sub(self.size.height as usize);
-        } else if row < self.get_top_index() {
-            self.origin.y = row;
-        }
-        Terminal::move_to(Position {
-            x: (col - self.origin.x) as u16,
-            y: (row - self.origin.y) as u16,
-        })?;
-        Ok(())
+        Some(Location { x: col, y: row })
     }
 
     fn render_content(&mut self, buffer: &Buffer) -> Result<(), Error> {
