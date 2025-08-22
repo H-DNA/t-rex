@@ -41,13 +41,18 @@ impl TextArea {
 
     fn scroll_cursor_into_view(&mut self, buffer: &Buffer, area: TerminalArea) {
         let RenderPosition { col, row } = self.get_render_position_of_cursor(buffer, area);
-        if col > area.get_width() as usize + self.origin.col {
-            self.origin.col = col.saturating_sub(area.get_width() as usize);
+        let width = area.get_width();
+        let height = area.get_height();
+        if width == 0 || height == 0 {
+            return;
+        }
+        if col >= width as usize + self.origin.col {
+            self.origin.col = col.saturating_sub(width as usize - 1);
         } else if col < self.origin.col {
             self.origin.col = col;
         }
-        if row > area.get_height() as usize + self.origin.row {
-            self.origin.row = row.saturating_sub(area.get_height() as usize);
+        if row >= height as usize + self.origin.row {
+            self.origin.row = row.saturating_sub(height as usize - 1);
         } else if row < self.origin.row {
             self.origin.row = row;
         }

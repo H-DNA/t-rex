@@ -1,8 +1,10 @@
-use std::io::Error;
 use super::{components::Component, renderer::Renderer};
 use crate::editor::{
-    buffer::Buffer, terminal::Terminal, utility::{TerminalArea, TerminalPosition}
+    buffer::Buffer,
+    terminal::Terminal,
+    utility::{TerminalArea, TerminalPosition},
 };
+use std::io::Error;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
@@ -19,7 +21,11 @@ impl Window {
         }
     }
 
-    pub fn render_content(&mut self, buffer: &Buffer, renderer: &mut Renderer) -> Result<(), Error> {
+    pub fn render_content(
+        &mut self,
+        buffer: &Buffer,
+        renderer: &mut Renderer,
+    ) -> Result<(), Error> {
         let max_width = self.area.get_width();
         let max_height = self.area.get_height();
         let left = self.area.get_left();
@@ -35,7 +41,13 @@ impl Window {
                 })
                 .collect::<Vec<_>>()
                 .join("");
-            renderer.render_content(&truncated_line, TerminalPosition { row: i + top, col: left });
+            renderer.render_content(
+                &truncated_line,
+                TerminalPosition {
+                    row: i + top,
+                    col: left,
+                },
+            );
         }
         Ok(())
     }
