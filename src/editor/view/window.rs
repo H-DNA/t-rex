@@ -1,5 +1,4 @@
 use std::io::Error;
-
 use super::{components::Component, renderer::Renderer};
 use crate::editor::{
     buffer::Buffer, terminal::Terminal, utility::{TerminalArea, TerminalPosition}
@@ -24,6 +23,7 @@ impl Window {
         let max_width = self.area.get_width();
         let max_height = self.area.get_height();
         let left = self.area.get_left();
+        let top = self.area.get_top();
         for i in 0..max_height {
             let line = self.component.get_line(i, buffer, self.area);
             let mut cur_width = 0;
@@ -35,7 +35,7 @@ impl Window {
                 })
                 .collect::<Vec<_>>()
                 .join("");
-            renderer.render(&truncated_line, TerminalPosition { row: i, col: left });
+            renderer.render(&truncated_line, TerminalPosition { row: i + top, col: left });
         }
         Ok(())
     }
