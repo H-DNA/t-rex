@@ -1,6 +1,6 @@
 use super::utility::{Style, TerminalPosition, TerminalSize};
 use crossterm::{
-    cursor::{MoveTo, RestorePosition, SavePosition},
+    cursor::{self, MoveTo, RestorePosition, SavePosition},
     execute, queue,
     style::{Attribute, Print, SetAttribute, SetBackgroundColor, SetForegroundColor},
     terminal::{
@@ -99,5 +99,13 @@ impl Terminal {
                 queue!(std::io::stdout(), SetBackgroundColor(color))
             }
         }
+    }
+
+    pub fn hide_cursor() -> Result<(), Error> {
+        execute!(std::io::stdout(), cursor::Hide)
+    }
+
+    pub fn show_cursor() -> Result<(), Error> {
+        execute!(std::io::stdout(), cursor::Show)
     }
 }

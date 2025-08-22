@@ -71,6 +71,7 @@ impl Renderer {
 
     pub fn flush_changes(&mut self, size: TerminalSize) -> Result<(), Error> {
         Terminal::save_cursor_position()?;
+        Terminal::hide_cursor()?;
         for i in 0..max(self.lines.len(), self.prev_lines.len()) as usize {
             let cur_line = self.lines.get(i);
             let prev_line = self.prev_lines.get(i);
@@ -80,6 +81,7 @@ impl Renderer {
                 self.flush_line(i as u16, cur_line, cur_style, size)?;
             }
         }
+        Terminal::show_cursor()?;
         Terminal::restore_cursor_position()?;
         self.prev_lines = self.lines.clone();
         self.prev_style_lines = self.style_lines.clone();
@@ -90,11 +92,13 @@ impl Renderer {
 
     pub fn flush_all(&mut self, size: TerminalSize) -> Result<(), Error> {
         Terminal::save_cursor_position()?;
+        Terminal::hide_cursor()?;
         for i in 0..max(self.lines.len(), self.prev_lines.len()) as usize {
             let cur_line = self.lines.get(i);
             let cur_style = self.style_lines.get(i);
             self.flush_line(i as u16, cur_line, cur_style, size)?;
         }
+        Terminal::show_cursor()?;
         Terminal::restore_cursor_position()?;
         self.prev_lines = self.lines.clone();
         self.prev_style_lines = self.style_lines.clone();
