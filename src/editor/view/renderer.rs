@@ -1,6 +1,6 @@
 use crate::editor::{
     terminal::Terminal,
-    utility::{Style, TerminalPosition},
+    utility::{Style, TerminalPosition, TerminalSize},
 };
 use std::{cmp::max, io::Error};
 use unicode_segmentation::UnicodeSegmentation;
@@ -69,7 +69,7 @@ impl Renderer {
             });
     }
 
-    pub fn flush_changes(&mut self) -> Result<(), Error> {
+    pub fn flush_changes(&mut self, size: TerminalSize) -> Result<(), Error> {
         Terminal::save_cursor_position()?;
         for i in 0..max(self.lines.len(), self.prev_lines.len()) as usize {
             let cur_line = self.lines.get(i);
@@ -77,7 +77,7 @@ impl Renderer {
             let cur_style = self.style_lines.get(i);
             let prev_style = self.prev_style_lines.get(i);
             if cur_line != prev_line || cur_style != prev_style {
-                self.flush_line(i as u16, cur_line, cur_style)?;
+                self.flush_line(i as u16, cur_line, cur_style, size)?;
             }
         }
         Terminal::restore_cursor_position()?;
@@ -88,12 +88,12 @@ impl Renderer {
         Ok(())
     }
 
-    pub fn flush_all(&mut self) -> Result<(), Error> {
+    pub fn flush_all(&mut self, size: TerminalSize) -> Result<(), Error> {
         Terminal::save_cursor_position()?;
         for i in 0..max(self.lines.len(), self.prev_lines.len()) as usize {
             let cur_line = self.lines.get(i);
             let cur_style = self.style_lines.get(i);
-            self.flush_line(i as u16, cur_line, cur_style)?;
+            self.flush_line(i as u16, cur_line, cur_style, size)?;
         }
         Terminal::restore_cursor_position()?;
         self.prev_lines = self.lines.clone();
@@ -108,6 +108,7 @@ impl Renderer {
         line_idx: u16,
         line: Option<&ContentLine>,
         style: Option<&StyleLine>,
+        size: TerminalSize,
     ) -> Result<(), Error> {
         self.reset_all_styles()?;
 
@@ -117,12 +118,20 @@ impl Renderer {
         })?;
         Terminal::clear_line()?;
 
-        let default_line = ContentLine::default();
-        let line = line.unwrap_or(&default_line);
-        let default_style = StyleLine::default();
-        let style = style.unwrap_or(&default_style);
+        let default_content_line = ContentLine::default();
+        let content_line = line.unwrap_or(&default_content_line);
+        let default_style_line = StyleLine::default();
+        let style_line = style.unwrap_or(&default_style_line);
 
-        for segment in &line.segments {
+        for offset in 0..size.width {
+            let applicable_styles = self.find_applicable_styles(style_line, offset);
+            for style_to_apply in applicable_styles {
+                Terminal::set_style(style_to_apply)?;
+            }
+            Terminal::print(" ")?;
+        }
+
+        for segment in &content_line.segments {
             Terminal::move_to(TerminalPosition {
                 col: segment.offset,
                 row: line_idx as u16,
@@ -130,7 +139,7 @@ impl Renderer {
             let mut cur_offset = segment.offset;
 
             for grapheme in segment.content.graphemes(true) {
-                let applicable_styles = self.find_applicable_styles(style, cur_offset);
+                let applicable_styles = self.find_applicable_styles(style_line, cur_offset);
                 for style_to_apply in applicable_styles {
                     Terminal::set_style(style_to_apply)?;
                 }

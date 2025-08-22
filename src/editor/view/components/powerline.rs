@@ -12,7 +12,11 @@ impl Component for Powerline {
         if area.get_width() == 0 || line_idx > 0 {
             return "".into();
         }
-        return format!("{} - {} lines", buffer.get_path().unwrap_or("[No Name]"), buffer.get_line_count());
+        return format!(
+            "{} - {} lines",
+            buffer.get_path().unwrap_or("[No Name]"),
+            buffer.get_line_count()
+        );
     }
 
     fn get_cursor(&mut self, buffer: &Buffer, area: TerminalArea) -> TerminalPosition {
