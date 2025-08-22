@@ -35,7 +35,7 @@ impl Window {
                 })
                 .collect::<Vec<_>>()
                 .join("");
-            renderer.render(&truncated_line, TerminalPosition { row: i + top, col: left });
+            renderer.render_content(&truncated_line, TerminalPosition { row: i + top, col: left });
         }
         Ok(())
     }

@@ -1,8 +1,8 @@
-use super::utility::{TerminalPosition, TerminalSize};
+use super::utility::{Style, TerminalPosition, TerminalSize};
 use crossterm::{
     cursor::{MoveTo, RestorePosition, SavePosition},
     execute, queue,
-    style::Print,
+    style::{Attribute, Print, SetAttribute, SetBackgroundColor, SetForegroundColor},
     terminal::{
         self, Clear, ClearType, EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode,
         enable_raw_mode,
@@ -60,5 +60,44 @@ impl Terminal {
 
     pub fn clear_line() -> Result<(), Error> {
         queue!(std::io::stdout(), Clear(ClearType::CurrentLine))
+    }
+
+    pub fn set_style(style: Style) -> Result<(), Error> {
+        match style {
+            Style::Bold(enabled) => {
+                if enabled {
+                    queue!(std::io::stdout(), SetAttribute(Attribute::Bold))
+                } else {
+                    queue!(std::io::stdout(), SetAttribute(Attribute::NoBold))
+                }
+            }
+            Style::Italic(enabled) => {
+                if enabled {
+                    queue!(std::io::stdout(), SetAttribute(Attribute::Italic))
+                } else {
+                    queue!(std::io::stdout(), SetAttribute(Attribute::NoItalic))
+                }
+            }
+            Style::Underlined(enabled) => {
+                if enabled {
+                    queue!(std::io::stdout(), SetAttribute(Attribute::Underlined))
+                } else {
+                    queue!(std::io::stdout(), SetAttribute(Attribute::NoUnderline))
+                }
+            }
+            Style::Inverted(enabled) => {
+                if enabled {
+                    queue!(std::io::stdout(), SetAttribute(Attribute::Reverse))
+                } else {
+                    queue!(std::io::stdout(), SetAttribute(Attribute::NoReverse))
+                }
+            }
+            Style::Foreground(color) => {
+                queue!(std::io::stdout(), SetForegroundColor(color))
+            }
+            Style::Background(color) => {
+                queue!(std::io::stdout(), SetBackgroundColor(color))
+            }
+        }
     }
 }

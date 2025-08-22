@@ -1,21 +1,39 @@
+use crate::editor::{
+    terminal::Terminal,
+    utility::{Style, TerminalPosition},
+};
 use std::{cmp::max, io::Error};
-
-use crate::editor::{terminal::Terminal, utility::TerminalPosition};
+use unicode_segmentation::UnicodeSegmentation;
+use unicode_width::UnicodeWidthStr;
 
 #[derive(Default, PartialEq, Eq, Clone)]
-struct LineSegment {
+struct ContentSegment {
     content: String,
     offset: u16,
 }
 
 #[derive(Default, PartialEq, Eq, Clone)]
-struct Line {
-    segments: Vec<LineSegment>,
+struct ContentLine {
+    segments: Vec<ContentSegment>,
+}
+
+#[derive(Default, PartialEq, Eq, Clone)]
+struct StyleSegment {
+    styles: Vec<Style>,
+    start_col: u16,
+    end_col: u16,
+}
+
+#[derive(Default, PartialEq, Eq, Clone)]
+struct StyleLine {
+    segments: Vec<StyleSegment>,
 }
 
 pub struct Renderer {
-    prev_lines: Vec<Line>,
-    lines: Vec<Line>,
+    prev_lines: Vec<ContentLine>,
+    lines: Vec<ContentLine>,
+    prev_style_lines: Vec<StyleLine>,
+    style_lines: Vec<StyleLine>,
 }
 
 impl Renderer {
@@ -23,74 +41,128 @@ impl Renderer {
         Renderer {
             prev_lines: vec![],
             lines: vec![],
+            prev_style_lines: vec![],
+            style_lines: vec![],
         }
     }
 
-    pub fn render(&mut self, content: &str, origin: TerminalPosition) {
-        while self.lines.len() <= origin.row as usize {
-            self.lines.push(Line::default());
+    pub fn render_style(&mut self, styles: Vec<Style>, row: u16, start_col: u16, end_col: u16) {
+        while self.style_lines.len() <= row as usize {
+            self.style_lines.push(StyleLine::default());
         }
-        self.lines[origin.row as usize].segments.push(LineSegment {
-            content: content.into(),
-            offset: origin.col,
+        self.style_lines[row as usize].segments.push(StyleSegment {
+            styles,
+            start_col,
+            end_col,
         });
+    }
+
+    pub fn render_content(&mut self, content: &str, origin: TerminalPosition) {
+        while self.lines.len() <= origin.row as usize {
+            self.lines.push(ContentLine::default());
+        }
+        self.lines[origin.row as usize]
+            .segments
+            .push(ContentSegment {
+                content: content.into(),
+                offset: origin.col,
+            });
     }
 
     pub fn flush_changes(&mut self) -> Result<(), Error> {
         Terminal::save_cursor_position()?;
-
         for i in 0..max(self.lines.len(), self.prev_lines.len()) as usize {
-            let line = self.lines.get(i);
+            let cur_line = self.lines.get(i);
             let prev_line = self.prev_lines.get(i);
-
-            if line != prev_line {
-                Terminal::move_to(TerminalPosition {
-                    col: 0,
-                    row: i as u16,
-                })?;
-                Terminal::clear_line()?;
-                let default_line = Line::default();
-                let line = line.unwrap_or(&default_line);
-                for segment in &line.segments {
-                    Terminal::move_to(TerminalPosition {
-                        col: segment.offset,
-                        row: i as u16,
-                    })?;
-                    Terminal::print(&segment.content)?;
-                }
+            let cur_style = self.style_lines.get(i);
+            let prev_style = self.prev_style_lines.get(i);
+            if cur_line != prev_line || cur_style != prev_style {
+                self.flush_line(i as u16, cur_line, cur_style)?;
             }
         }
-
         Terminal::restore_cursor_position()?;
         self.prev_lines = self.lines.clone();
+        self.prev_style_lines = self.style_lines.clone();
         self.lines.clear();
+        self.style_lines.clear();
         Ok(())
     }
 
     pub fn flush_all(&mut self) -> Result<(), Error> {
         Terminal::save_cursor_position()?;
-
         for i in 0..max(self.lines.len(), self.prev_lines.len()) as usize {
-            let line = self.lines.get(i);
+            let cur_line = self.lines.get(i);
+            let cur_style = self.style_lines.get(i);
+            self.flush_line(i as u16, cur_line, cur_style)?;
+        }
+        Terminal::restore_cursor_position()?;
+        self.prev_lines = self.lines.clone();
+        self.prev_style_lines = self.style_lines.clone();
+        self.lines.clear();
+        self.style_lines.clear();
+        Ok(())
+    }
+
+    fn flush_line(
+        &self,
+        line_idx: u16,
+        line: Option<&ContentLine>,
+        style: Option<&StyleLine>,
+    ) -> Result<(), Error> {
+        self.reset_all_styles()?;
+
+        Terminal::move_to(TerminalPosition {
+            col: 0,
+            row: line_idx as u16,
+        })?;
+        Terminal::clear_line()?;
+
+        let default_line = ContentLine::default();
+        let line = line.unwrap_or(&default_line);
+        let default_style = StyleLine::default();
+        let style = style.unwrap_or(&default_style);
+
+        for segment in &line.segments {
             Terminal::move_to(TerminalPosition {
-                col: 0,
-                row: i as u16,
+                col: segment.offset,
+                row: line_idx as u16,
             })?;
-            Terminal::clear_line()?;
-            let default_line = Line::default();
-            let line = line.unwrap_or(&default_line);
-            for segment in &line.segments {
-                Terminal::move_to(TerminalPosition {
-                    col: segment.offset,
-                    row: i as u16,
-                })?;
-                Terminal::print(&segment.content)?;
+            let mut cur_offset = segment.offset;
+
+            for grapheme in segment.content.graphemes(true) {
+                let applicable_styles = self.find_applicable_styles(style, cur_offset);
+                for style_to_apply in applicable_styles {
+                    Terminal::set_style(style_to_apply)?;
+                }
+
+                Terminal::print(grapheme)?;
+                cur_offset += grapheme.width() as u16;
+            }
+        }
+        Ok(())
+    }
+
+    fn reset_all_styles(&self) -> Result<(), Error> {
+        Terminal::set_style(Style::Bold(false))?;
+        Terminal::set_style(Style::Italic(false))?;
+        Terminal::set_style(Style::Underlined(false))?;
+        Terminal::set_style(Style::Inverted(false))?;
+        Terminal::set_style(Style::Foreground(crossterm::style::Color::White))?;
+        Terminal::set_style(Style::Background(crossterm::style::Color::Black))?;
+        Ok(())
+    }
+
+    fn find_applicable_styles(&self, style_line: &StyleLine, col: u16) -> Vec<Style> {
+        let mut applicable_styles = Vec::new();
+
+        for style_segment in &style_line.segments {
+            if col >= style_segment.start_col && col < style_segment.end_col {
+                for style in &style_segment.styles {
+                    applicable_styles.push(style.clone());
+                }
             }
         }
 
-        Terminal::restore_cursor_position()?;
-        self.prev_lines = self.lines.clone();
-        self.lines.clear();
-        Ok(())
+        applicable_styles
     }
 }

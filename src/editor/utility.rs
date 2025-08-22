@@ -1,3 +1,5 @@
+use crossterm::style::Color;
+
 #[derive(Default, Clone, Copy)]
 pub struct TerminalSize {
     pub width: u16,
@@ -77,4 +79,14 @@ impl TerminalArea {
     pub fn get_height(&self) -> u16 {
         self.bottom - self.top + 1
     }
+}
+
+#[derive(PartialEq, Eq, Clone)]
+pub enum Style {
+    Bold(bool),
+    Italic(bool),
+    Underlined(bool),
+    Inverted(bool),
+    Foreground(Color),
+    Background(Color),
 }
