@@ -2,9 +2,20 @@ use std::{cmp::max, io::Error};
 
 use crate::editor::{terminal::Terminal, utility::TerminalPosition};
 
+#[derive(Default, PartialEq, Eq, Clone)]
+struct LineSegment {
+    content: String,
+    offset: u16,
+}
+
+#[derive(Default, PartialEq, Eq, Clone)]
+struct Line {
+    segments: Vec<LineSegment>,
+}
+
 pub struct Renderer {
-    prev_lines: Vec<String>,
-    lines: Vec<String>,
+    prev_lines: Vec<Line>,
+    lines: Vec<Line>,
 }
 
 impl Renderer {
@@ -15,11 +26,14 @@ impl Renderer {
         }
     }
 
-    pub fn render(&mut self, content: &str, line: u16) {
-        while self.lines.len() <= line as usize {
-            self.lines.push("".into());
+    pub fn render(&mut self, content: &str, origin: TerminalPosition) {
+        while self.lines.len() <= origin.row as usize {
+            self.lines.push(Line::default());
         }
-        self.lines[line as usize] = content.into();
+        self.lines[origin.row as usize].segments.push(LineSegment {
+            content: content.into(),
+            offset: origin.col,
+        });
     }
 
     pub fn flush_changes(&mut self) -> Result<(), Error> {
@@ -35,7 +49,15 @@ impl Renderer {
                     row: i as u16,
                 })?;
                 Terminal::clear_line()?;
-                Terminal::print(&line.unwrap_or(&String::from("")))?;
+                let default_line = Line::default();
+                let line = line.unwrap_or(&default_line);
+                for segment in &line.segments {
+                    Terminal::move_to(TerminalPosition {
+                        col: segment.offset,
+                        row: i as u16,
+                    })?;
+                    Terminal::print(&segment.content)?;
+                }
             }
         }
 
@@ -50,13 +72,20 @@ impl Renderer {
 
         for i in 0..max(self.lines.len(), self.prev_lines.len()) as usize {
             let line = self.lines.get(i);
-
             Terminal::move_to(TerminalPosition {
                 col: 0,
                 row: i as u16,
             })?;
             Terminal::clear_line()?;
-            Terminal::print(&line.unwrap_or(&String::from("")))?;
+            let default_line = Line::default();
+            let line = line.unwrap_or(&default_line);
+            for segment in &line.segments {
+                Terminal::move_to(TerminalPosition {
+                    col: segment.offset,
+                    row: i as u16,
+                })?;
+                Terminal::print(&segment.content)?;
+            }
         }
 
         Terminal::restore_cursor_position()?;

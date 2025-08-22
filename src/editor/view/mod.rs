@@ -1,19 +1,21 @@
 use super::{
     buffer::Buffer,
     terminal::Terminal,
-    utility::{TerminalArea, TerminalPosition, TerminalSize},
+    utility::{TerminalArea, TerminalSize},
 };
 use components::text_area::TextArea;
 use renderer::Renderer;
 use std::io::Error;
+use window::Window;
 
 mod components;
 mod renderer;
+mod window;
 
 pub struct View {
     size: TerminalSize,
     renderer: Renderer,
-    text_area: TextArea,
+    text_area: Window,
 }
 
 impl View {
@@ -21,12 +23,18 @@ impl View {
         Ok(View {
             size: TerminalSize::default(),
             renderer: Renderer::new(),
-            text_area: TextArea::new(),
+            text_area: Window::new(TerminalArea::default(), TextArea::default()),
         })
     }
 
     pub fn set_size(&mut self, size: TerminalSize) {
         self.size = size;
+        self.text_area.set_area(TerminalArea {
+            top: 0,
+            left: 0,
+            bottom: size.height - 1,
+            right: size.width - 1,
+        });
     }
 
     pub fn setup_terminal(&self) -> Result<(), Error> {
@@ -58,15 +66,8 @@ impl View {
     }
 
     fn render_components(&mut self, buffer: &Buffer) -> Result<(), Error> {
-        let text_area = TerminalArea::new(
-            TerminalPosition { row: 0, col: 0 },
-            TerminalSize {
-                width: self.size.width,
-                height: self.size.height,
-            },
-        );
-        self.text_area
-            .render(&mut self.renderer, buffer, text_area)?;
+        self.text_area.render_content(buffer, &mut self.renderer)?;
+        self.text_area.render_cursor(buffer)?;
         Ok(())
     }
 }
