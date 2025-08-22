@@ -4,6 +4,7 @@ use crate::editor::{
 };
 
 pub mod text_area;
+pub mod powerline;
 
 pub trait Component {
     fn get_line(&mut self, line_idx: u16, buffer: &Buffer, area: TerminalArea) -> String;

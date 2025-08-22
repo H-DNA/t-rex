@@ -3,7 +3,7 @@ use super::{
     terminal::Terminal,
     utility::{TerminalArea, TerminalSize},
 };
-use components::text_area::TextArea;
+use components::{powerline::Powerline, text_area::TextArea};
 use renderer::Renderer;
 use std::io::Error;
 use window::Window;
@@ -16,6 +16,7 @@ pub struct View {
     size: TerminalSize,
     renderer: Renderer,
     text_area: Window,
+    powerline: Window,
 }
 
 impl View {
@@ -24,17 +25,39 @@ impl View {
             size: TerminalSize::default(),
             renderer: Renderer::new(),
             text_area: Window::new(TerminalArea::default(), TextArea::default()),
+            powerline: Window::new(TerminalArea::default(), Powerline::default()),
         })
     }
 
     pub fn set_size(&mut self, size: TerminalSize) {
         self.size = size;
-        self.text_area.set_area(TerminalArea {
-            top: 0,
-            left: 0,
-            bottom: size.height - 1,
-            right: size.width - 1,
-        });
+        if size.height == 1 {
+            self.text_area.set_area(TerminalArea {
+                top: 0,
+                left: 0,
+                bottom: size.height - 1,
+                right: size.width - 1,
+            });
+            self.powerline.set_area(TerminalArea {
+                top: 0,
+                left: 0,
+                bottom: 0,
+                right: 0,
+            });
+        } else {
+            self.text_area.set_area(TerminalArea {
+                top: 0,
+                left: 0,
+                bottom: size.height - 2,
+                right: size.width - 1,
+            });
+            self.powerline.set_area(TerminalArea {
+                top: size.height - 1,
+                left: 0,
+                bottom: size.height - 1,
+                right: size.width - 1,
+            });
+        }
     }
 
     pub fn setup_terminal(&self) -> Result<(), Error> {
@@ -67,6 +90,7 @@ impl View {
 
     fn render_components(&mut self, buffer: &Buffer) -> Result<(), Error> {
         self.text_area.render_content(buffer, &mut self.renderer)?;
+        self.powerline.render_content(buffer, &mut self.renderer)?;
         self.text_area.render_cursor(buffer)?;
         Ok(())
     }
