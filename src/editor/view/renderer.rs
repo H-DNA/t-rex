@@ -78,7 +78,7 @@ impl Renderer {
             let cur_style = self.style_lines.get(i);
             let prev_style = self.prev_style_lines.get(i);
             if cur_line != prev_line || cur_style != prev_style {
-                self.flush_line(i as u16, cur_line, cur_style, size)?;
+                self.render_line(i as u16, cur_line, cur_style, size)?;
             }
         }
         Terminal::show_cursor()?;
@@ -92,7 +92,7 @@ impl Renderer {
         for i in 0..max(self.lines.len(), self.prev_lines.len()) as usize {
             let cur_line = self.lines.get(i);
             let cur_style = self.style_lines.get(i);
-            self.flush_line(i as u16, cur_line, cur_style, size)?;
+            self.render_line(i as u16, cur_line, cur_style, size)?;
         }
         Terminal::show_cursor()?;
         Terminal::restore_cursor_position()?;
@@ -106,7 +106,7 @@ impl Renderer {
         self.style_lines.clear();
     }
 
-    fn flush_line(
+    fn render_line(
         &self,
         line_idx: u16,
         line: Option<&ContentLine>,
