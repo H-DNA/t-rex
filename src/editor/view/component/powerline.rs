@@ -1,6 +1,8 @@
 use super::Component;
 use crate::editor::{
-    buffer::Buffer, utility::TerminalPosition, view::drawing_surface::DrawingSurface,
+    buffer::Buffer,
+    utility::{Style, TerminalPosition},
+    view::drawing_surface::DrawingSurface,
 };
 
 #[derive(Default)]
@@ -14,6 +16,14 @@ impl Component for Powerline {
             buffer.get_line_count()
         );
         surface.add_content(&content, TerminalPosition { row: 0, col: 0 });
+        surface.add_styles(
+            vec![Style::Inverted(true)],
+            TerminalPosition { row: 0, col: 0 },
+            TerminalPosition {
+                row: 0,
+                col: surface.get_bounding_rect_size().width,
+            },
+        );
     }
 
     fn focus<T: DrawingSurface>(&mut self, buffer: &Buffer, surface: &mut T) {
