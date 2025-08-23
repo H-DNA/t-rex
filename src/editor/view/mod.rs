@@ -15,7 +15,7 @@ mod window;
 pub struct View {
     size: TerminalSize,
     renderer: Renderer,
-    text_area: Window,
+    textarea: Window,
     powerline: Window,
 }
 
@@ -24,7 +24,7 @@ impl View {
         Ok(View {
             size: TerminalSize::default(),
             renderer: Renderer::new(),
-            text_area: Window::new(TerminalArea::default(), Textarea::default()),
+            textarea: Window::new(TerminalArea::default(), Textarea::default()),
             powerline: Window::new(TerminalArea::default(), Powerline::default()),
         })
     }
@@ -32,7 +32,7 @@ impl View {
     pub fn set_size(&mut self, size: TerminalSize) {
         self.size = size;
         if size.height == 1 {
-            self.text_area.set_area(TerminalArea {
+            self.textarea.set_area(TerminalArea {
                 top: 0,
                 left: 0,
                 bottom: size.height - 1,
@@ -45,7 +45,7 @@ impl View {
                 right: 0,
             });
         } else {
-            self.text_area.set_area(TerminalArea {
+            self.textarea.set_area(TerminalArea {
                 top: 0,
                 left: 0,
                 bottom: size.height - 2,
@@ -91,9 +91,9 @@ impl View {
     }
 
     fn render_components(&mut self, buffer: &Buffer) -> Result<(), Error> {
-        self.text_area.render_content(buffer, &mut self.renderer)?;
+        self.textarea.render_content(buffer, &mut self.renderer)?;
         self.powerline.render_content(buffer, &mut self.renderer)?;
-        self.text_area.render_cursor(buffer)?;
+        self.textarea.render_cursor(buffer)?;
         Ok(())
     }
 }
