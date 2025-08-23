@@ -177,7 +177,33 @@ impl Canvas {
 
 impl DrawingSurface for Canvas {
     fn add_styles(&mut self, styles: Vec<Style>, start: TerminalPosition, end: TerminalPosition) {
-        todo!("Not implemented yet!");
+        let max_row = max(start.row, end.row) as usize;
+        while self.style_lines.len() <= max_row {
+            self.style_lines.push(StyleLine::default());
+        }
+
+        for row in start.row..=end.row {
+            let row_idx = row as usize;
+
+            let start_col = if row == start.row { start.col } else { 0 };
+            let end_col = if row == end.row {
+                end.col
+            } else {
+                self.size.width
+            };
+
+            if start_col >= end_col {
+                continue;
+            }
+
+            let style_segment = StyleSegment {
+                styles: styles.clone(),
+                start_col,
+                end_col,
+            };
+
+            self.style_lines[row_idx].segments.push(style_segment);
+        }
     }
 
     fn add_content(&mut self, content: &str, origin: TerminalPosition) {

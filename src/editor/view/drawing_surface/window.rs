@@ -21,7 +21,39 @@ impl Window {
 
 impl DrawingSurface for Window {
     fn add_styles(&mut self, styles: Vec<Style>, start: TerminalPosition, end: TerminalPosition) {
-        todo!("Not implemented yet!");
+        let max_width = self.area.get_width();
+        let max_height = self.area.get_height();
+
+        if start.col >= max_width || start.row >= max_height {
+            return;
+        }
+
+        let left = self.area.get_left();
+        let top = self.area.get_top();
+
+        let clamped_start = TerminalPosition {
+            row: start.row.min(max_height - 1),
+            col: start.col.min(max_width - 1),
+        };
+
+        let clamped_end = TerminalPosition {
+            row: end.row.min(max_height - 1),
+            col: end.col.min(max_width - 1),
+        };
+
+        let canvas_start = TerminalPosition {
+            row: clamped_start.row + top,
+            col: clamped_start.col + left,
+        };
+
+        let canvas_end = TerminalPosition {
+            row: clamped_end.row + top,
+            col: clamped_end.col + left,
+        };
+
+        self.canvas
+            .borrow_mut()
+            .add_styles(styles, canvas_start, canvas_end);
     }
 
     fn add_content(&mut self, content: &str, origin: TerminalPosition) {
