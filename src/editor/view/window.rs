@@ -41,7 +41,7 @@ impl Window {
                 })
                 .collect::<Vec<_>>()
                 .join("");
-            renderer.render_content(
+            renderer.add_content(
                 &truncated_line,
                 TerminalPosition {
                     row: i + top,

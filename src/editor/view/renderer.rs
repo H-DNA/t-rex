@@ -46,7 +46,7 @@ impl Renderer {
         }
     }
 
-    pub fn render_style(&mut self, styles: Vec<Style>, row: u16, start_col: u16, end_col: u16) {
+    pub fn add_style(&mut self, styles: Vec<Style>, row: u16, start_col: u16, end_col: u16) {
         while self.style_lines.len() <= row as usize {
             self.style_lines.push(StyleLine::default());
         }
@@ -57,7 +57,7 @@ impl Renderer {
         });
     }
 
-    pub fn render_content(&mut self, content: &str, origin: TerminalPosition) {
+    pub fn add_content(&mut self, content: &str, origin: TerminalPosition) {
         while self.lines.len() <= origin.row as usize {
             self.lines.push(ContentLine::default());
         }
@@ -69,7 +69,7 @@ impl Renderer {
             });
     }
 
-    pub fn flush_changes(&mut self, size: TerminalSize) -> Result<(), Error> {
+    pub fn render_changes(&mut self, size: TerminalSize) -> Result<(), Error> {
         Terminal::save_cursor_position()?;
         Terminal::hide_cursor()?;
         for i in 0..max(self.lines.len(), self.prev_lines.len()) as usize {
@@ -90,7 +90,7 @@ impl Renderer {
         Ok(())
     }
 
-    pub fn flush_all(&mut self, size: TerminalSize) -> Result<(), Error> {
+    pub fn render_all(&mut self, size: TerminalSize) -> Result<(), Error> {
         Terminal::save_cursor_position()?;
         Terminal::hide_cursor()?;
         for i in 0..max(self.lines.len(), self.prev_lines.len()) as usize {

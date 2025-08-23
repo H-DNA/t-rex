@@ -76,14 +76,14 @@ impl View {
 
     pub fn render_incremental(&mut self, buffer: &Buffer) -> Result<(), Error> {
         self.render_components(buffer)?;
-        self.renderer.flush_changes(self.size)?;
+        self.renderer.render_changes(self.size)?;
         Terminal::flush()?;
         Ok(())
     }
 
     pub fn force_render_all(&mut self, buffer: &Buffer) -> Result<(), Error> {
         self.render_components(buffer)?;
-        self.renderer.flush_all(self.size)?;
+        self.renderer.render_all(self.size)?;
         Terminal::flush()?;
         Ok(())
     }
