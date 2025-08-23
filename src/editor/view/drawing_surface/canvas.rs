@@ -5,7 +5,6 @@ use crate::editor::{
 use std::{cmp::max, io::Error};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
-
 use super::DrawingSurface;
 
 #[derive(Default, PartialEq, Eq, Clone)]
