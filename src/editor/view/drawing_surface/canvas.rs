@@ -6,6 +6,8 @@ use std::{cmp::max, io::Error};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
+use super::DrawingSurface;
+
 #[derive(Default, PartialEq, Eq, Clone)]
 struct ContentSegment {
     content: String,
@@ -34,6 +36,8 @@ pub struct Canvas {
     lines: Vec<ContentLine>,
     prev_style_lines: Vec<StyleLine>,
     style_lines: Vec<StyleLine>,
+    cursors: Vec<TerminalPosition>,
+    size: TerminalSize,
 }
 
 impl Canvas {
@@ -43,34 +47,16 @@ impl Canvas {
             lines: vec![],
             prev_style_lines: vec![],
             style_lines: vec![],
+            cursors: vec![],
+            size: TerminalSize::default(),
         }
     }
 
-    pub fn add_styles(&mut self, styles: Vec<Style>, row: u16, start_col: u16, end_col: u16) {
-        while self.style_lines.len() <= row as usize {
-            self.style_lines.push(StyleLine::default());
-        }
-        self.style_lines[row as usize].segments.push(StyleSegment {
-            styles,
-            start_col,
-            end_col,
-        });
+    pub fn set_size(&mut self, size: TerminalSize) {
+        self.size = size;
     }
 
-    pub fn add_content(&mut self, content: &str, origin: TerminalPosition) {
-        while self.lines.len() <= origin.row as usize {
-            self.lines.push(ContentLine::default());
-        }
-        self.lines[origin.row as usize]
-            .segments
-            .push(ContentSegment {
-                content: content.into(),
-                offset: origin.col,
-            });
-    }
-
-    pub fn render_changes(&mut self, size: TerminalSize) -> Result<(), Error> {
-        Terminal::save_cursor_position()?;
+    pub fn render_changes(&mut self) -> Result<(), Error> {
         Terminal::hide_cursor()?;
         for i in 0..max(self.lines.len(), self.prev_lines.len()) as usize {
             let cur_line = self.lines.get(i);
@@ -78,24 +64,23 @@ impl Canvas {
             let cur_style = self.style_lines.get(i);
             let prev_style = self.prev_style_lines.get(i);
             if cur_line != prev_line || cur_style != prev_style {
-                self.render_line(i as u16, cur_line, cur_style, size)?;
+                self.render_line(i as u16, cur_line, cur_style)?;
             }
         }
         Terminal::show_cursor()?;
-        Terminal::restore_cursor_position()?;
+        self.render_cursor()?;
         Ok(())
     }
 
-    pub fn render_all(&mut self, size: TerminalSize) -> Result<(), Error> {
-        Terminal::save_cursor_position()?;
+    pub fn render_all(&mut self) -> Result<(), Error> {
         Terminal::hide_cursor()?;
         for i in 0..max(self.lines.len(), self.prev_lines.len()) as usize {
             let cur_line = self.lines.get(i);
             let cur_style = self.style_lines.get(i);
-            self.render_line(i as u16, cur_line, cur_style, size)?;
+            self.render_line(i as u16, cur_line, cur_style)?;
         }
         Terminal::show_cursor()?;
-        Terminal::restore_cursor_position()?;
+        self.render_cursor()?;
         Ok(())
     }
 
@@ -104,6 +89,7 @@ impl Canvas {
         self.prev_style_lines = self.style_lines.clone();
         self.lines.clear();
         self.style_lines.clear();
+        self.cursors.clear();
     }
 
     fn render_line(
@@ -111,7 +97,6 @@ impl Canvas {
         line_idx: u16,
         line: Option<&ContentLine>,
         style: Option<&StyleLine>,
-        size: TerminalSize,
     ) -> Result<(), Error> {
         self.reset_all_styles()?;
 
@@ -126,7 +111,7 @@ impl Canvas {
         let default_style_line = StyleLine::default();
         let style_line = style.unwrap_or(&default_style_line);
 
-        for offset in 0..size.width {
+        for offset in 0..self.size.width {
             let applicable_styles = self.find_applicable_styles(style_line, offset);
             for style_to_apply in applicable_styles {
                 Terminal::set_style(style_to_apply)?;
@@ -154,6 +139,17 @@ impl Canvas {
         Ok(())
     }
 
+    fn render_cursor(&self) -> Result<(), Error> {
+        if self.cursors.len() == 0 {
+            return Ok(());
+        }
+        if self.cursors.len() > 1 {
+            todo!("Not implemented yet");
+        }
+        Terminal::move_to(self.cursors[0])?;
+        Ok(())
+    }
+
     fn reset_all_styles(&self) -> Result<(), Error> {
         Terminal::set_style(Style::Bold(false))?;
         Terminal::set_style(Style::Italic(false))?;
@@ -176,5 +172,31 @@ impl Canvas {
         }
 
         applicable_styles
+    }
+}
+
+impl DrawingSurface for Canvas {
+    fn add_styles(&mut self, styles: Vec<Style>, start: TerminalPosition, end: TerminalPosition) {
+        todo!("Not implemented yet!");
+    }
+
+    fn add_content(&mut self, content: &str, origin: TerminalPosition) {
+        while self.lines.len() <= origin.row as usize {
+            self.lines.push(ContentLine::default());
+        }
+        self.lines[origin.row as usize]
+            .segments
+            .push(ContentSegment {
+                content: content.into(),
+                offset: origin.col,
+            });
+    }
+
+    fn add_cursor(&mut self, position: TerminalPosition) {
+        self.cursors.push(position);
+    }
+
+    fn get_bounding_rect_size(&self) -> TerminalSize {
+        self.size
     }
 }

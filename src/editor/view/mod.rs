@@ -1,63 +1,35 @@
 use super::{
     buffer::Buffer,
     terminal::Terminal,
-    utility::{TerminalArea, TerminalSize},
+    utility::{TerminalArea, TerminalPosition, TerminalSize},
 };
-use components::{powerline::Powerline, textarea::Textarea};
-use canvas::Canvas;
-use std::io::Error;
-use window::Window;
+use component::{Component, textarea::Textarea};
+use drawing_surface::{canvas::Canvas, window::Window};
+use std::{cell::RefCell, io::Error, rc::Rc};
 
-mod components;
-mod canvas;
-mod window;
+mod component;
+mod drawing_surface;
 
 pub struct View {
-    size: TerminalSize,
-    canvas: Canvas,
-    textarea: Window,
-    powerline: Window,
+    canvas: Rc<RefCell<Canvas>>,
+    textarea: Textarea,
+    textarea_window: Window,
 }
 
 impl View {
     pub fn new() -> Result<View, Error> {
+        let canvas = Rc::new(RefCell::new(Canvas::new()));
         Ok(View {
-            size: TerminalSize::default(),
-            canvas: Canvas::new(),
-            textarea: Window::new(TerminalArea::default(), Textarea::default()),
-            powerline: Window::new(TerminalArea::default(), Powerline::default()),
+            canvas: canvas.clone(),
+            textarea_window: Window::new(canvas.clone(), TerminalArea::default()),
+            textarea: Textarea::default(),
         })
     }
 
     pub fn set_size(&mut self, size: TerminalSize) {
-        self.size = size;
-        if size.height == 1 {
-            self.textarea.set_area(TerminalArea {
-                top: 0,
-                left: 0,
-                bottom: size.height - 1,
-                right: size.width - 1,
-            });
-            self.powerline.set_area(TerminalArea {
-                top: 0,
-                left: 0,
-                bottom: 0,
-                right: 0,
-            });
-        } else {
-            self.textarea.set_area(TerminalArea {
-                top: 0,
-                left: 0,
-                bottom: size.height - 2,
-                right: size.width - 1,
-            });
-            self.powerline.set_area(TerminalArea {
-                top: size.height - 1,
-                left: 0,
-                bottom: size.height - 1,
-                right: size.width - 1,
-            });
-        }
+        self.canvas.borrow_mut().set_size(size);
+        self.textarea_window
+            .set_area(TerminalArea::new(TerminalPosition { col: 0, row: 0 }, size));
     }
 
     pub fn setup_terminal(&self) -> Result<(), Error> {
@@ -75,25 +47,24 @@ impl View {
     }
 
     pub fn render_incremental(&mut self, buffer: &Buffer) -> Result<(), Error> {
-        self.canvas.clear();
+        self.canvas.borrow_mut().clear();
         self.render_components(buffer)?;
-        self.canvas.render_changes(self.size)?;
+        self.canvas.borrow_mut().render_changes()?;
         Terminal::flush()?;
         Ok(())
     }
 
     pub fn force_render_all(&mut self, buffer: &Buffer) -> Result<(), Error> {
-        self.canvas.clear();
+        self.canvas.borrow_mut().clear();
         self.render_components(buffer)?;
-        self.canvas.render_all(self.size)?;
+        self.canvas.borrow_mut().render_all()?;
         Terminal::flush()?;
         Ok(())
     }
 
     fn render_components(&mut self, buffer: &Buffer) -> Result<(), Error> {
-        self.textarea.render_content(buffer, &mut self.canvas)?;
-        self.powerline.render_content(buffer, &mut self.canvas)?;
-        self.textarea.render_cursor(buffer)?;
+        self.textarea.draw(buffer, &mut self.textarea_window);
+        self.textarea.focus(buffer, &mut self.textarea_window);
         Ok(())
     }
 }
