@@ -83,10 +83,6 @@ impl Renderer {
         }
         Terminal::show_cursor()?;
         Terminal::restore_cursor_position()?;
-        self.prev_lines = self.lines.clone();
-        self.prev_style_lines = self.style_lines.clone();
-        self.lines.clear();
-        self.style_lines.clear();
         Ok(())
     }
 
@@ -100,11 +96,14 @@ impl Renderer {
         }
         Terminal::show_cursor()?;
         Terminal::restore_cursor_position()?;
+        Ok(())
+    }
+
+    pub fn clear(&mut self) {
         self.prev_lines = self.lines.clone();
         self.prev_style_lines = self.style_lines.clone();
         self.lines.clear();
         self.style_lines.clear();
-        Ok(())
     }
 
     fn flush_line(
