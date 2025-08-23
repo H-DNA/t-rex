@@ -31,7 +31,7 @@ impl Window {
         let left = self.area.get_left();
         let top = self.area.get_top();
         for i in 0..max_height {
-            let line = self.component.get_line(i, buffer, self.area);
+            let line = self.component.generate_line(i, buffer, self.area);
             let mut cur_width = 0;
             let truncated_line = line
                 .graphemes(true)
@@ -53,7 +53,7 @@ impl Window {
     }
 
     pub fn render_cursor(&mut self, buffer: &Buffer) -> Result<(), Error> {
-        let cursor = self.component.get_cursor(buffer, self.area);
+        let cursor = self.component.generate_cursor(buffer, self.area);
         Terminal::move_to(TerminalPosition {
             col: cursor.col + self.area.get_left(),
             row: cursor.row + self.area.get_top(),

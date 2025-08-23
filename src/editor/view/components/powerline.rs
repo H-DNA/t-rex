@@ -8,7 +8,7 @@ use crate::editor::{
 pub struct Powerline;
 
 impl Component for Powerline {
-    fn get_line(&mut self, line_idx: u16, buffer: &Buffer, area: TerminalArea) -> String {
+    fn generate_line(&mut self, line_idx: u16, buffer: &Buffer, area: TerminalArea) -> String {
         if area.get_width() == 0 || line_idx > 0 {
             return "".into();
         }
@@ -19,7 +19,7 @@ impl Component for Powerline {
         );
     }
 
-    fn get_cursor(&mut self, buffer: &Buffer, area: TerminalArea) -> TerminalPosition {
+    fn generate_cursor(&mut self, buffer: &Buffer, area: TerminalArea) -> TerminalPosition {
         return TerminalPosition::default();
     }
 }

@@ -70,7 +70,7 @@ impl Textarea {
 }
 
 impl Component for Textarea {
-    fn get_line(&mut self, line_idx: u16, buffer: &Buffer, area: TerminalArea) -> String {
+    fn generate_line(&mut self, line_idx: u16, buffer: &Buffer, area: TerminalArea) -> String {
         self.scroll_cursor_into_view(buffer, area);
         let line_count = buffer.get_line_count();
         let buffer_line_idx = line_idx as usize + self.origin.row;
@@ -85,7 +85,7 @@ impl Component for Textarea {
         }
     }
 
-    fn get_cursor(&mut self, buffer: &Buffer, area: TerminalArea) -> TerminalPosition {
+    fn generate_cursor(&mut self, buffer: &Buffer, area: TerminalArea) -> TerminalPosition {
         self.scroll_cursor_into_view(buffer, area);
         let RenderPosition { col, row } = self.get_render_position_of_cursor(buffer, area);
         TerminalPosition {
