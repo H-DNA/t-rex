@@ -4,17 +4,17 @@ use super::{
     utility::{TerminalArea, TerminalSize},
 };
 use components::{powerline::Powerline, textarea::Textarea};
-use renderer::Renderer;
+use canvas::Canvas;
 use std::io::Error;
 use window::Window;
 
 mod components;
-mod renderer;
+mod canvas;
 mod window;
 
 pub struct View {
     size: TerminalSize,
-    renderer: Renderer,
+    canvas: Canvas,
     textarea: Window,
     powerline: Window,
 }
@@ -23,7 +23,7 @@ impl View {
     pub fn new() -> Result<View, Error> {
         Ok(View {
             size: TerminalSize::default(),
-            renderer: Renderer::new(),
+            canvas: Canvas::new(),
             textarea: Window::new(TerminalArea::default(), Textarea::default()),
             powerline: Window::new(TerminalArea::default(), Powerline::default()),
         })
@@ -75,24 +75,24 @@ impl View {
     }
 
     pub fn render_incremental(&mut self, buffer: &Buffer) -> Result<(), Error> {
-        self.renderer.clear();
+        self.canvas.clear();
         self.render_components(buffer)?;
-        self.renderer.render_changes(self.size)?;
+        self.canvas.render_changes(self.size)?;
         Terminal::flush()?;
         Ok(())
     }
 
     pub fn force_render_all(&mut self, buffer: &Buffer) -> Result<(), Error> {
-        self.renderer.clear();
+        self.canvas.clear();
         self.render_components(buffer)?;
-        self.renderer.render_all(self.size)?;
+        self.canvas.render_all(self.size)?;
         Terminal::flush()?;
         Ok(())
     }
 
     fn render_components(&mut self, buffer: &Buffer) -> Result<(), Error> {
-        self.textarea.render_content(buffer, &mut self.renderer)?;
-        self.powerline.render_content(buffer, &mut self.renderer)?;
+        self.textarea.render_content(buffer, &mut self.canvas)?;
+        self.powerline.render_content(buffer, &mut self.canvas)?;
         self.textarea.render_cursor(buffer)?;
         Ok(())
     }

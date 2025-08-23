@@ -1,4 +1,4 @@
-use super::{components::Component, renderer::Renderer};
+use super::{canvas::Canvas, components::Component};
 use crate::editor::{
     buffer::Buffer,
     terminal::Terminal,
@@ -21,11 +21,7 @@ impl Window {
         }
     }
 
-    pub fn render_content(
-        &mut self,
-        buffer: &Buffer,
-        renderer: &mut Renderer,
-    ) -> Result<(), Error> {
+    pub fn render_content(&mut self, buffer: &Buffer, canvas: &mut Canvas) -> Result<(), Error> {
         let max_width = self.area.get_width();
         let max_height = self.area.get_height();
         let left = self.area.get_left();
@@ -41,7 +37,7 @@ impl Window {
                 })
                 .collect::<Vec<_>>()
                 .join("");
-            renderer.add_content(
+            canvas.add_content(
                 &truncated_line,
                 TerminalPosition {
                     row: i + top,

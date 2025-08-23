@@ -29,16 +29,16 @@ struct StyleLine {
     segments: Vec<StyleSegment>,
 }
 
-pub struct Renderer {
+pub struct Canvas {
     prev_lines: Vec<ContentLine>,
     lines: Vec<ContentLine>,
     prev_style_lines: Vec<StyleLine>,
     style_lines: Vec<StyleLine>,
 }
 
-impl Renderer {
-    pub fn new() -> Renderer {
-        Renderer {
+impl Canvas {
+    pub fn new() -> Canvas {
+        Canvas {
             prev_lines: vec![],
             lines: vec![],
             prev_style_lines: vec![],
