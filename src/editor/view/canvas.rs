@@ -46,7 +46,7 @@ impl Canvas {
         }
     }
 
-    pub fn add_style(&mut self, styles: Vec<Style>, row: u16, start_col: u16, end_col: u16) {
+    pub fn add_styles(&mut self, styles: Vec<Style>, row: u16, start_col: u16, end_col: u16) {
         while self.style_lines.len() <= row as usize {
             self.style_lines.push(StyleLine::default());
         }
