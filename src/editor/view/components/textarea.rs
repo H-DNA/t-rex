@@ -7,11 +7,11 @@ use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
 #[derive(Default)]
-pub struct TextArea {
+pub struct Textarea {
     origin: RenderPosition,
 }
 
-impl TextArea {
+impl Textarea {
     fn get_renderable_line(
         &self,
         buffer_line_idx: usize,
@@ -69,7 +69,7 @@ impl TextArea {
     }
 }
 
-impl Component for TextArea {
+impl Component for Textarea {
     fn get_line(&mut self, line_idx: u16, buffer: &Buffer, area: TerminalArea) -> String {
         self.scroll_cursor_into_view(buffer, area);
         let line_count = buffer.get_line_count();

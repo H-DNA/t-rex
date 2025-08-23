@@ -3,7 +3,7 @@ use super::{
     terminal::Terminal,
     utility::{TerminalArea, TerminalSize},
 };
-use components::{powerline::Powerline, text_area::TextArea};
+use components::{powerline::Powerline, textarea::Textarea};
 use renderer::Renderer;
 use std::io::Error;
 use window::Window;
@@ -24,7 +24,7 @@ impl View {
         Ok(View {
             size: TerminalSize::default(),
             renderer: Renderer::new(),
-            text_area: Window::new(TerminalArea::default(), TextArea::default()),
+            text_area: Window::new(TerminalArea::default(), Textarea::default()),
             powerline: Window::new(TerminalArea::default(), Powerline::default()),
         })
     }
