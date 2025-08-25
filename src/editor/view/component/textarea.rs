@@ -1,4 +1,3 @@
-use super::Component;
 use crate::editor::{
     buffer::Buffer,
     utility::{GraphemeLocation, RenderPosition, TerminalPosition, TerminalSize},
@@ -13,6 +12,41 @@ pub struct Textarea {
 }
 
 impl Textarea {
+    pub fn draw<T: DrawingSurface>(&mut self, buffer: &Buffer, surface: &mut T) {
+        let size = surface.get_bounding_rect_size();
+        self.scroll_cursor_into_view(buffer, size);
+        let line_count = buffer.get_line_count();
+        for line_idx in 0..size.height {
+            let buffer_line_idx = line_idx as usize + self.origin.row;
+            let content: String = if buffer_line_idx >= line_count {
+                "~".into()
+            } else {
+                self.get_renderable_line(buffer_line_idx, buffer)
+                    .unwrap_or("".into())
+                    .graphemes(true)
+                    .skip(self.origin.col)
+                    .collect()
+            };
+            surface.add_content(
+                &content,
+                TerminalPosition {
+                    col: 0,
+                    row: line_idx,
+                },
+            );
+        }
+    }
+
+    pub fn focus<T: DrawingSurface>(&mut self, buffer: &Buffer, surface: &mut T) {
+        let size = surface.get_bounding_rect_size();
+        self.scroll_cursor_into_view(buffer, size);
+        let RenderPosition { col, row } = self.get_render_position_of_cursor(buffer);
+        surface.add_cursor(TerminalPosition {
+            col: (col - self.origin.col) as u16,
+            row: (row - self.origin.row) as u16,
+        });
+    }
+
     fn get_renderable_line(&self, buffer_line_idx: usize, buffer: &Buffer) -> Option<String> {
         let line = buffer.get_line(buffer_line_idx)?;
         let renderable_line = line
@@ -58,42 +92,5 @@ impl Textarea {
         let prev_graphemes = cur_line.graphemes(true).take(offset);
         let col: usize = prev_graphemes.map(|grapheme| grapheme.width()).sum();
         RenderPosition { col, row: line }
-    }
-}
-
-impl Component for Textarea {
-    fn draw<T: DrawingSurface>(&mut self, buffer: &Buffer, surface: &mut T) {
-        let size = surface.get_bounding_rect_size();
-        self.scroll_cursor_into_view(buffer, size);
-        let line_count = buffer.get_line_count();
-        for line_idx in 0..size.height {
-            let buffer_line_idx = line_idx as usize + self.origin.row;
-            let content: String = if buffer_line_idx >= line_count {
-                "~".into()
-            } else {
-                self.get_renderable_line(buffer_line_idx, buffer)
-                    .unwrap_or("".into())
-                    .graphemes(true)
-                    .skip(self.origin.col)
-                    .collect()
-            };
-            surface.add_content(
-                &content,
-                TerminalPosition {
-                    col: 0,
-                    row: line_idx,
-                },
-            );
-        }
-    }
-
-    fn focus<T: DrawingSurface>(&mut self, buffer: &Buffer, surface: &mut T) {
-        let size = surface.get_bounding_rect_size();
-        self.scroll_cursor_into_view(buffer, size);
-        let RenderPosition { col, row } = self.get_render_position_of_cursor(buffer);
-        surface.add_cursor(TerminalPosition {
-            col: (col - self.origin.col) as u16,
-            row: (row - self.origin.row) as u16,
-        });
     }
 }

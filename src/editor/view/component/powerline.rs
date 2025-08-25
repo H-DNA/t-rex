@@ -1,4 +1,3 @@
-use super::Component;
 use crate::editor::{
     buffer::Buffer,
     utility::{Style, TerminalPosition},
@@ -8,8 +7,8 @@ use crate::editor::{
 #[derive(Default)]
 pub struct Powerline;
 
-impl Component for Powerline {
-    fn draw<T: DrawingSurface>(&mut self, buffer: &Buffer, surface: &mut T) {
+impl Powerline {
+    pub fn draw<T: DrawingSurface>(&mut self, buffer: &Buffer, surface: &mut T) {
         let content = format!(
             "{} - {} lines",
             buffer.get_path().unwrap_or("[No Name]"),
@@ -24,9 +23,5 @@ impl Component for Powerline {
                 col: surface.get_bounding_rect_size().width,
             },
         );
-    }
-
-    fn focus<T: DrawingSurface>(&mut self, buffer: &Buffer, surface: &mut T) {
-        return;
     }
 }

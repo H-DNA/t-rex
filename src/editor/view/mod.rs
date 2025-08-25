@@ -3,7 +3,7 @@ use super::{
     terminal::Terminal,
     utility::{TerminalArea, TerminalPosition, TerminalSize},
 };
-use component::{Component, powerline::Powerline, textarea::Textarea};
+use component::{powerline::Powerline, textarea::Textarea};
 use drawing_surface::{canvas::Canvas, window::Window};
 use std::{cell::RefCell, io::Error, rc::Rc};
 
@@ -55,7 +55,10 @@ impl View {
                 },
             ));
             self.powerline_window.set_area(TerminalArea::new(
-                TerminalPosition { col: 0, row: size.height - 1 },
+                TerminalPosition {
+                    col: 0,
+                    row: size.height - 1,
+                },
                 TerminalSize {
                     width: size.width,
                     height: 1,
