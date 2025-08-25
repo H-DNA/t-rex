@@ -23,7 +23,6 @@ impl DrawingSurface for Window {
     fn add_styles(&mut self, styles: Vec<Style>, start: TerminalPosition, end: TerminalPosition) {
         let max_width = self.area.get_width();
         let max_height = self.area.get_height();
-
         if start.col >= max_width || start.row >= max_height {
             return;
         }
@@ -35,7 +34,6 @@ impl DrawingSurface for Window {
             row: start.row.min(max_height - 1),
             col: start.col.min(max_width - 1),
         };
-
         let clamped_end = TerminalPosition {
             row: end.row.min(max_height - 1),
             col: end.col.min(max_width - 1),
@@ -45,7 +43,6 @@ impl DrawingSurface for Window {
             row: clamped_start.row + top,
             col: clamped_start.col + left,
         };
-
         let canvas_end = TerminalPosition {
             row: clamped_end.row + top,
             col: clamped_end.col + left,
