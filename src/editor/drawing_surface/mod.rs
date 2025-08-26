@@ -1,7 +1,6 @@
 use crate::editor::utility::{Style, TerminalPosition, TerminalSize};
 
-pub mod canvas;
-pub mod window;
+pub mod rect;
 
 pub trait DrawingSurface {
     fn add_styles(&mut self, styles: Vec<Style>, start: TerminalPosition, end: TerminalPosition);

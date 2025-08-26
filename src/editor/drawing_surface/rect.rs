@@ -1,25 +1,34 @@
-use super::{DrawingSurface, canvas::Canvas};
-use crate::editor::utility::{Style, TerminalArea, TerminalPosition, TerminalSize};
+use super::DrawingSurface;
+use crate::editor::{
+    canvas::Canvas,
+    utility::{Style, TerminalArea, TerminalPosition, TerminalSize},
+};
 use std::{cell::RefCell, rc::Rc};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-pub struct Window {
+pub struct Rect {
     canvas: Rc<RefCell<Canvas>>,
     area: TerminalArea,
 }
 
-impl Window {
-    pub fn new(canvas: Rc<RefCell<Canvas>>, area: TerminalArea) -> Window {
-        Window { canvas, area }
+impl Rect {
+    pub fn new(canvas: Rc<RefCell<Canvas>>, area: TerminalArea) -> Rect {
+        Rect { canvas, area }
     }
 
-    pub fn set_area(&mut self, area: TerminalArea) {
-        self.area = area;
+    pub fn from_canvas(canvas: Rc<RefCell<Canvas>>) -> Rect {
+        Rect {
+            canvas: canvas.clone(),
+            area: TerminalArea::new(
+                TerminalPosition { col: 0, row: 0 },
+                canvas.borrow().get_size(),
+            ),
+        }
     }
 }
 
-impl DrawingSurface for Window {
+impl DrawingSurface for Rect {
     fn add_styles(&mut self, styles: Vec<Style>, start: TerminalPosition, end: TerminalPosition) {
         let max_width = self.area.get_width();
         let max_height = self.area.get_height();

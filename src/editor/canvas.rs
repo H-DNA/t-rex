@@ -1,11 +1,12 @@
 use crate::editor::{
     terminal::Terminal,
-    utility::{Style, TerminalPosition, TerminalSize},
+    utility::{Style, TerminalPosition},
 };
 use std::{cmp::max, io::Error};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
-use super::DrawingSurface;
+
+use super::utility::TerminalSize;
 
 #[derive(Default, PartialEq, Eq, Clone)]
 struct ContentSegment {
@@ -36,7 +37,6 @@ pub struct Canvas {
     prev_style_lines: Vec<StyleLine>,
     style_lines: Vec<StyleLine>,
     cursors: Vec<TerminalPosition>,
-    size: TerminalSize,
 }
 
 impl Canvas {
@@ -47,12 +47,62 @@ impl Canvas {
             prev_style_lines: vec![],
             style_lines: vec![],
             cursors: vec![],
-            size: TerminalSize::default(),
         }
     }
 
-    pub fn set_size(&mut self, size: TerminalSize) {
-        self.size = size;
+    pub fn get_size(&self) -> TerminalSize {
+        Terminal::get_size().unwrap_or(TerminalSize::default())
+    }
+
+    pub fn add_styles(
+        &mut self,
+        styles: Vec<Style>,
+        start: TerminalPosition,
+        end: TerminalPosition,
+    ) {
+        let max_row = max(start.row, end.row) as usize;
+        while self.style_lines.len() <= max_row {
+            self.style_lines.push(StyleLine::default());
+        }
+
+        for row in start.row..=end.row {
+            let row_idx = row as usize;
+
+            let start_col = if row == start.row { start.col } else { 0 };
+            let end_col = if row == end.row {
+                end.col
+            } else {
+                self.get_size().width
+            };
+
+            if start_col >= end_col {
+                continue;
+            }
+
+            let style_segment = StyleSegment {
+                styles: styles.clone(),
+                start_col,
+                end_col,
+            };
+
+            self.style_lines[row_idx].segments.push(style_segment);
+        }
+    }
+
+    pub fn add_content(&mut self, content: &str, origin: TerminalPosition) {
+        while self.lines.len() <= origin.row as usize {
+            self.lines.push(ContentLine::default());
+        }
+        self.lines[origin.row as usize]
+            .segments
+            .push(ContentSegment {
+                content: content.into(),
+                offset: origin.col,
+            });
+    }
+
+    pub fn add_cursor(&mut self, position: TerminalPosition) {
+        self.cursors.push(position);
     }
 
     pub fn render_changes(&mut self) -> Result<(), Error> {
@@ -110,7 +160,7 @@ impl Canvas {
         let default_style_line = StyleLine::default();
         let style_line = style.unwrap_or(&default_style_line);
 
-        for offset in 0..self.size.width {
+        for offset in 0..self.get_size().width {
             let applicable_styles = self.find_applicable_styles(style_line, offset);
             for style_to_apply in applicable_styles {
                 Terminal::set_style(style_to_apply)?;
@@ -171,57 +221,5 @@ impl Canvas {
         }
 
         applicable_styles
-    }
-}
-
-impl DrawingSurface for Canvas {
-    fn add_styles(&mut self, styles: Vec<Style>, start: TerminalPosition, end: TerminalPosition) {
-        let max_row = max(start.row, end.row) as usize;
-        while self.style_lines.len() <= max_row {
-            self.style_lines.push(StyleLine::default());
-        }
-
-        for row in start.row..=end.row {
-            let row_idx = row as usize;
-
-            let start_col = if row == start.row { start.col } else { 0 };
-            let end_col = if row == end.row {
-                end.col
-            } else {
-                self.size.width
-            };
-
-            if start_col >= end_col {
-                continue;
-            }
-
-            let style_segment = StyleSegment {
-                styles: styles.clone(),
-                start_col,
-                end_col,
-            };
-
-            self.style_lines[row_idx].segments.push(style_segment);
-        }
-    }
-
-    fn add_content(&mut self, content: &str, origin: TerminalPosition) {
-        while self.lines.len() <= origin.row as usize {
-            self.lines.push(ContentLine::default());
-        }
-        self.lines[origin.row as usize]
-            .segments
-            .push(ContentSegment {
-                content: content.into(),
-                offset: origin.col,
-            });
-    }
-
-    fn add_cursor(&mut self, position: TerminalPosition) {
-        self.cursors.push(position);
-    }
-
-    fn get_bounding_rect_size(&self) -> TerminalSize {
-        self.size
     }
 }

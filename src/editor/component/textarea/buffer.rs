@@ -1,15 +1,9 @@
-use super::utility::{Direction, GraphemeLocation};
+use crate::editor::utility::{Direction, GraphemeLocation};
 use ropey::Rope;
-use std::{
-    cmp::min,
-    fs::File,
-    io::{BufReader, Error},
-    path::PathBuf,
-};
+use std::cmp::min;
 use unicode_segmentation::UnicodeSegmentation;
 
 pub struct Buffer {
-    path: Option<PathBuf>,
     text: Rope,
     // The "raw" current grapheme location
     // contains the line and offset of the current cursor in terms of graphemes
@@ -19,30 +13,15 @@ pub struct Buffer {
 }
 
 impl Buffer {
-    pub fn new(path: Option<PathBuf>) -> Result<Buffer, Error> {
-        Ok(Buffer {
-            path: path.clone(),
+    pub fn new(content: &str) -> Buffer {
+        Buffer {
             raw_current_grapheme_location: GraphemeLocation::default(),
-            text: if path.is_none() {
-                Rope::new()
-            } else {
-                Rope::from_reader(BufReader::new(File::open(
-                    path.unwrap().to_string_lossy().into_owned(),
-                )?))?
-            },
-        })
+            text: Rope::from_str(content),
+        }
     }
 
     pub fn get_grapheme_location(&self) -> GraphemeLocation {
         self.get_effective_grapheme_location()
-    }
-
-    pub fn get_path(&self) -> Option<&str> {
-        if let Some(ref path) = self.path {
-            path.to_str()
-        } else {
-            None
-        }
     }
 
     pub fn type_char(&mut self, c: char) {

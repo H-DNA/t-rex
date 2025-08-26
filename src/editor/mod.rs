@@ -1,14 +1,16 @@
-use buffer::Buffer;
-use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers, read};
-use std::{io::Error, path::PathBuf};
+use app::App;
+use canvas::Canvas;
+use crossterm::event::{Event, KeyModifiers, read};
+use drawing_surface::rect::Rect;
+use std::{cell::RefCell, io::Error, path::PathBuf, rc::Rc};
 use terminal::Terminal;
-use utility::{Direction, TerminalSize};
-use view::View;
 
-mod buffer;
+mod app;
+mod canvas;
+mod component;
+mod drawing_surface;
 mod terminal;
 mod utility;
-mod view;
 
 #[derive(Default)]
 pub struct Editor;
@@ -22,17 +24,15 @@ impl Editor {
 }
 
 struct CoreEditor {
-    should_quit: bool,
-    buffer: Buffer,
-    view: View,
+    canvas: Rc<RefCell<Canvas>>,
+    app: App,
 }
 
 impl CoreEditor {
     fn new(path: Option<PathBuf>) -> Result<CoreEditor, Error> {
         Ok(CoreEditor {
-            should_quit: false,
-            buffer: Buffer::new(path)?,
-            view: View::new()?,
+            canvas: Rc::new(RefCell::new(Canvas::new())),
+            app: App::new(path)?,
         })
     }
 
@@ -44,61 +44,57 @@ impl CoreEditor {
     }
 
     fn init(&mut self) -> Result<(), Error> {
-        self.should_quit = false;
-        self.view.set_size(Terminal::get_size()?);
-        self.view.setup_terminal()?;
+        Terminal::enter_alternate_screen()?;
+        Terminal::enable_raw_mode()?;
+        Terminal::clear_screen()?;
         Ok(())
     }
 
     fn finalize(&mut self) -> Result<(), Error> {
-        self.view.teardown_terminal()?;
+        Terminal::clear_screen()?;
+        Terminal::disable_raw_mode()?;
+        Terminal::leave_alternate_screen()?;
         Ok(())
     }
 
     fn repl(&mut self) -> Result<(), Error> {
-        self.view.force_render_all(&self.buffer)?;
+        self.render_all()?;
 
-        while !self.should_quit {
+        loop {
             match read()? {
                 Event::Key(event) => {
-                    self.handle_key(event)?;
-                    self.view.render_incremental(&self.buffer)?;
+                    if event.is_press()
+                        && event.code.is_char('q')
+                        && event.modifiers.contains(KeyModifiers::CONTROL)
+                    {
+                        return Ok(());
+                    }
+                    self.app.handle_key(event);
+                    self.render_incremental()?;
                 }
-                Event::Resize(width, height) => {
-                    self.view.set_size(TerminalSize { width, height });
-                    self.view.force_render_all(&self.buffer)?;
+                Event::Resize(_, _) => {
+                    self.render_all()?;
                 }
                 _ => {}
             }
         }
+    }
+
+    fn render_incremental(&mut self) -> Result<(), Error> {
+        self.canvas.borrow_mut().clear();
+        let mut surface = Rect::from_canvas(self.canvas.clone());
+        self.app.draw(&mut surface);
+        self.app.focus(&mut surface);
+        self.canvas.borrow_mut().render_changes()?;
         Ok(())
     }
 
-    fn handle_key(&mut self, event: KeyEvent) -> Result<(), Error> {
-        if !event.is_press() {
-            return Ok(());
-        }
-
-        let KeyEvent {
-            code, modifiers, ..
-        } = event;
-
-        match code {
-            KeyCode::Char('q') if modifiers.contains(KeyModifiers::CONTROL) => {
-                self.should_quit = true;
-            }
-            KeyCode::Up => self.buffer.move_grapheme(Direction::Up),
-            KeyCode::Down => self.buffer.move_grapheme(Direction::Down),
-            KeyCode::Left => self.buffer.move_grapheme(Direction::Left),
-            KeyCode::Right => self.buffer.move_grapheme(Direction::Right),
-            KeyCode::Char(c) => self.buffer.type_char(c),
-            KeyCode::Enter => self.buffer.type_enter(),
-            KeyCode::Delete => self.buffer.type_delete(),
-            KeyCode::Backspace => self.buffer.type_backspace(),
-            KeyCode::Tab => self.buffer.type_char('\t'),
-            _ => {}
-        }
-
+    fn render_all(&mut self) -> Result<(), Error> {
+        self.canvas.borrow_mut().clear();
+        let mut surface = Rect::from_canvas(self.canvas.clone());
+        self.app.draw(&mut surface);
+        self.app.focus(&mut surface);
+        self.canvas.borrow_mut().render_all()?;
         Ok(())
     }
 }

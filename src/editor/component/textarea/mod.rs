@@ -1,27 +1,45 @@
 use crate::editor::{
-    buffer::Buffer,
-    utility::{GraphemeLocation, RenderPosition, TerminalPosition, TerminalSize},
-    view::drawing_surface::DrawingSurface,
+    drawing_surface::DrawingSurface,
+    utility::{Direction, GraphemeLocation, RenderPosition, TerminalPosition, TerminalSize},
 };
+use buffer::Buffer;
+use crossterm::event::{KeyCode, KeyEvent};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
-#[derive(Default)]
+pub mod buffer;
+
 pub struct Textarea {
     origin: RenderPosition,
+    buffer: Buffer,
 }
 
 impl Textarea {
-    pub fn draw<T: DrawingSurface>(&mut self, buffer: &Buffer, surface: &mut T) {
+    pub fn new(content: &str) -> Textarea {
+        Textarea {
+            origin: RenderPosition::default(),
+            buffer: Buffer::new(content),
+        }
+    }
+
+    pub fn set_content(&mut self, content: &str) {
+        self.buffer = Buffer::new(content);
+    }
+
+    pub fn get_content(&self) -> &Buffer {
+        &self.buffer
+    }
+
+    pub fn draw<T: DrawingSurface>(&mut self, surface: &mut T) {
         let size = surface.get_bounding_rect_size();
-        self.scroll_cursor_into_view(buffer, size);
-        let line_count = buffer.get_line_count();
+        self.scroll_cursor_into_view(size);
+        let line_count = self.buffer.get_line_count();
         for line_idx in 0..size.height {
             let buffer_line_idx = line_idx as usize + self.origin.row;
             let content: String = if buffer_line_idx >= line_count {
                 "~".into()
             } else {
-                self.get_renderable_line(buffer_line_idx, buffer)
+                self.get_renderable_line(buffer_line_idx)
                     .unwrap_or("".into())
                     .graphemes(true)
                     .skip(self.origin.col)
@@ -37,18 +55,39 @@ impl Textarea {
         }
     }
 
-    pub fn focus<T: DrawingSurface>(&mut self, buffer: &Buffer, surface: &mut T) {
+    pub fn focus<T: DrawingSurface>(&mut self, surface: &mut T) {
         let size = surface.get_bounding_rect_size();
-        self.scroll_cursor_into_view(buffer, size);
-        let RenderPosition { col, row } = self.get_render_position_of_cursor(buffer);
+        self.scroll_cursor_into_view(size);
+        let RenderPosition { col, row } = self.get_render_position_of_cursor();
         surface.add_cursor(TerminalPosition {
             col: (col - self.origin.col) as u16,
             row: (row - self.origin.row) as u16,
         });
     }
 
-    fn get_renderable_line(&self, buffer_line_idx: usize, buffer: &Buffer) -> Option<String> {
-        let line = buffer.get_line(buffer_line_idx)?;
+    pub fn handle_key(&mut self, event: KeyEvent) {
+        if !event.is_press() {
+            return;
+        }
+
+        let KeyEvent { code, .. } = event;
+
+        match code {
+            KeyCode::Up => self.buffer.move_grapheme(Direction::Up),
+            KeyCode::Down => self.buffer.move_grapheme(Direction::Down),
+            KeyCode::Left => self.buffer.move_grapheme(Direction::Left),
+            KeyCode::Right => self.buffer.move_grapheme(Direction::Right),
+            KeyCode::Char(c) => self.buffer.type_char(c),
+            KeyCode::Enter => self.buffer.type_enter(),
+            KeyCode::Delete => self.buffer.type_delete(),
+            KeyCode::Backspace => self.buffer.type_backspace(),
+            KeyCode::Tab => self.buffer.type_char('\t'),
+            _ => {}
+        }
+    }
+
+    fn get_renderable_line(&self, buffer_line_idx: usize) -> Option<String> {
+        let line = self.buffer.get_line(buffer_line_idx)?;
         let renderable_line = line
             .graphemes(true)
             .map(Self::get_renderable_grapheme)
@@ -69,8 +108,8 @@ impl Textarea {
         return grapheme;
     }
 
-    fn scroll_cursor_into_view(&mut self, buffer: &Buffer, size: TerminalSize) {
-        let RenderPosition { col, row } = self.get_render_position_of_cursor(buffer);
+    fn scroll_cursor_into_view(&mut self, size: TerminalSize) {
+        let RenderPosition { col, row } = self.get_render_position_of_cursor();
         if size.width == 0 || size.height == 0 {
             return;
         }
@@ -86,9 +125,9 @@ impl Textarea {
         }
     }
 
-    fn get_render_position_of_cursor(&self, buffer: &Buffer) -> RenderPosition {
-        let GraphemeLocation { offset, line } = buffer.get_grapheme_location();
-        let cur_line = self.get_renderable_line(line, buffer).unwrap_or("".into());
+    fn get_render_position_of_cursor(&self) -> RenderPosition {
+        let GraphemeLocation { offset, line } = self.buffer.get_grapheme_location();
+        let cur_line = self.get_renderable_line(line).unwrap_or("".into());
         let prev_graphemes = cur_line.graphemes(true).take(offset);
         let col: usize = prev_graphemes.map(|grapheme| grapheme.width()).sum();
         RenderPosition { col, row: line }
