@@ -118,6 +118,7 @@ impl Canvas {
         }
         Terminal::show_cursor()?;
         self.render_cursor()?;
+        Terminal::flush()?;
         Ok(())
     }
 
@@ -130,6 +131,7 @@ impl Canvas {
         }
         Terminal::show_cursor()?;
         self.render_cursor()?;
+        Terminal::flush()?;
         Ok(())
     }
 
