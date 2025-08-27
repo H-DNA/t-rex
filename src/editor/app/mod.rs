@@ -38,22 +38,25 @@ impl App {
         let (mut top_surface, mut bottom_surface) = surface.slice_bottom_horizontal(1);
 
         self.content_area.draw(top_surface.as_mut());
+        self.draw_powerline(bottom_surface.as_mut());
+    }
 
+    fn draw_powerline(&mut self, surface: &mut dyn DrawingSurface) {
         let pathname = if self.path.is_none() {
             "[No name]"
         } else {
             self.path.as_ref().unwrap()
         };
         let line_count = self.content_area.get_content().get_line_count();
-        bottom_surface.add_content(
+        surface.add_content(
             &format!("{pathname} - {line_count} lines"),
             TerminalPosition { col: 0, row: 0 },
         );
-        bottom_surface.add_styles(
+        surface.add_styles(
             vec![Style::Inverted(true)],
             TerminalPosition { col: 0, row: 0 },
             TerminalPosition {
-                col: bottom_surface.get_bounding_rect_size().width,
+                col: surface.get_bounding_rect_size().width,
                 row: 0,
             },
         );
