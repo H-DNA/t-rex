@@ -110,7 +110,7 @@ impl DrawingSurface for Rect {
         rows: u16,
     ) -> (Box<dyn DrawingSurface>, Box<dyn DrawingSurface>) {
         if self.area.get_height() < rows {
-            return (Box::new(self.clone()), Box::new(Sink::default()));
+            return (Box::new(Sink::default()), Box::new(self.clone()));
         }
         (
             Box::new(Rect::new(
