@@ -133,12 +133,12 @@ impl Buffer {
         }
     }
 
-    fn move_grapheme_to_start_of_line(&mut self, line_idx: usize) {
+    pub fn move_grapheme_to_start_of_line(&mut self, line_idx: usize) {
         self.raw_current_grapheme_location.line = line_idx;
         self.raw_current_grapheme_location.offset = 0;
     }
 
-    fn move_grapheme_to_end_of_line(&mut self, line_idx: usize) {
+    pub fn move_grapheme_to_end_of_line(&mut self, line_idx: usize) {
         let line_length = self.get_line_length(line_idx);
         if line_length.is_none() {
             return;

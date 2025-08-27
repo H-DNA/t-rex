@@ -86,6 +86,24 @@ impl Textarea {
         }
     }
 
+    pub fn move_to_end_of_line(&mut self, line_idx: usize) {
+        self.buffer.move_grapheme_to_end_of_line(line_idx);
+    }
+
+    pub fn move_to_start_of_line(&mut self, line_idx: usize) {
+        self.buffer.move_grapheme_to_start_of_line(line_idx);
+    }
+
+    pub fn move_to_end_of_current_line(&mut self) {
+        self.buffer
+            .move_grapheme_to_end_of_line(self.buffer.get_grapheme_location().line);
+    }
+
+    pub fn move_to_start_of_current_line(&mut self) {
+        self.buffer
+            .move_grapheme_to_start_of_line(self.buffer.get_grapheme_location().line);
+    }
+
     fn get_renderable_line(&self, buffer_line_idx: usize) -> Option<String> {
         let line = self.buffer.get_line(buffer_line_idx)?;
         let renderable_line = line

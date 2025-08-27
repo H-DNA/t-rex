@@ -3,15 +3,17 @@ use super::{
     drawing_surface::DrawingSurface,
     utility::{Style, TerminalPosition},
 };
-use crossterm::event::KeyEvent;
+use crossterm::event::{KeyCode, KeyEvent};
 use std::{
     fs::File,
     io::{Error, Read},
     path::PathBuf,
 };
 
-enum FocusedArea {
-    Content,
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum EditorMode {
+    Insert,
+    Normal,
     Command,
 }
 
@@ -19,7 +21,7 @@ pub struct App {
     content_area: Textarea,
     command_area: Textarea,
     path: Option<String>,
-    focused_area: FocusedArea,
+    mode: EditorMode,
 }
 
 impl App {
@@ -29,7 +31,7 @@ impl App {
                 content_area: Textarea::new(""),
                 command_area: Textarea::new(""),
                 path: None,
-                focused_area: FocusedArea::Content,
+                mode: EditorMode::Normal,
             })
         } else {
             let file_path = path.unwrap().to_string_lossy().into_owned();
@@ -40,7 +42,7 @@ impl App {
                 content_area: Textarea::new(&content),
                 command_area: Textarea::new(""),
                 path: Some(file_path),
-                focused_area: FocusedArea::Content,
+                mode: EditorMode::Normal,
             })
         }
     }
@@ -76,16 +78,65 @@ impl App {
     }
 
     pub fn focus(&mut self, surface: &mut dyn DrawingSurface) {
-        match self.focused_area {
-            FocusedArea::Content => self.content_area.focus(surface),
-            FocusedArea::Command => self.command_area.focus(surface),
+        let (top_surface, mut bottom_surface) = surface.slice_bottom_horizontal(1);
+        let (mut top_surface, _) = top_surface.slice_bottom_horizontal(1);
+
+        match self.mode {
+            EditorMode::Command => self.command_area.focus(bottom_surface.as_mut()),
+            _ => self.content_area.focus(top_surface.as_mut()),
         }
     }
 
     pub fn handle_key(&mut self, event: KeyEvent) {
-        match self.focused_area {
-            FocusedArea::Content => self.content_area.handle_key(event),
-            FocusedArea::Command => self.command_area.handle_key(event),
+        if self.handle_key_top_level(event) {
+            return;
+        }
+
+        match self.mode {
+            EditorMode::Insert => self.content_area.handle_key(event),
+            EditorMode::Command => self.command_area.handle_key(event),
+            _ => {}
+        }
+    }
+
+    fn handle_key_top_level(&mut self, event: KeyEvent) -> bool {
+        if !event.is_press() {
+            return false;
+        }
+        if event.code == KeyCode::Esc {
+            self.mode = EditorMode::Normal;
+            self.command_area.set_content("");
+            return true;
+        }
+        match self.mode {
+            EditorMode::Insert => {
+                return false;
+            }
+            EditorMode::Command => {
+                if event.code == KeyCode::Enter {
+                    self.command_area.set_content("");
+                    self.mode = EditorMode::Normal;
+                    return true;
+                }
+                return false;
+            }
+            EditorMode::Normal => {
+                match event.code {
+                    KeyCode::Char('i') => {
+                        self.mode = EditorMode::Insert;
+                    }
+                    KeyCode::Char(':') => {
+                        self.mode = EditorMode::Command;
+                        self.command_area.set_content(":");
+                        self.command_area.move_to_end_of_current_line();
+                    }
+                    KeyCode::Up | KeyCode::Left | KeyCode::Right | KeyCode::Down => {
+                        self.content_area.handle_key(event);
+                    }
+                    _ => {}
+                };
+                return true;
+            }
         }
     }
 }
