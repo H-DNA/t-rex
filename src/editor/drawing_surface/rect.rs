@@ -194,7 +194,7 @@ impl DrawingSurface for Rect {
         cols: u16,
     ) -> (Box<dyn DrawingSurface>, Box<dyn DrawingSurface>) {
         if self.area.get_width() < cols {
-            return (Box::new(self.clone()), Box::new(Sink::default()));
+            return (Box::new(Sink::default()), Box::new(self.clone()));
         }
         (
             Box::new(Rect::new(
