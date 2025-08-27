@@ -10,9 +10,16 @@ use std::{
     path::PathBuf,
 };
 
+enum FocusedArea {
+    Content,
+    Command,
+}
+
 pub struct App {
     content_area: Textarea,
+    command_area: Textarea,
     path: Option<String>,
+    focused_area: FocusedArea,
 }
 
 impl App {
@@ -20,7 +27,9 @@ impl App {
         if path.is_none() {
             Ok(App {
                 content_area: Textarea::new(""),
+                command_area: Textarea::new(""),
                 path: None,
+                focused_area: FocusedArea::Content,
             })
         } else {
             let file_path = path.unwrap().to_string_lossy().into_owned();
@@ -29,16 +38,20 @@ impl App {
             file.read_to_string(&mut content)?;
             Ok(App {
                 content_area: Textarea::new(&content),
+                command_area: Textarea::new(""),
                 path: Some(file_path),
+                focused_area: FocusedArea::Content,
             })
         }
     }
 
     pub fn draw(&mut self, surface: &mut dyn DrawingSurface) {
-        let (mut top_surface, mut bottom_surface) = surface.slice_bottom_horizontal(1);
+        let (top_surface, mut bottom_surface) = surface.slice_bottom_horizontal(1);
+        let (mut top_surface, mut mid_surface) = top_surface.slice_bottom_horizontal(1);
 
         self.content_area.draw(top_surface.as_mut());
-        self.draw_powerline(bottom_surface.as_mut());
+        self.draw_powerline(mid_surface.as_mut());
+        self.command_area.draw(bottom_surface.as_mut());
     }
 
     fn draw_powerline(&mut self, surface: &mut dyn DrawingSurface) {
@@ -63,10 +76,16 @@ impl App {
     }
 
     pub fn focus(&mut self, surface: &mut dyn DrawingSurface) {
-        self.content_area.focus(surface);
+        match self.focused_area {
+            FocusedArea::Content => self.content_area.focus(surface),
+            FocusedArea::Command => self.command_area.focus(surface),
+        }
     }
 
     pub fn handle_key(&mut self, event: KeyEvent) {
-        self.content_area.handle_key(event);
+        match self.focused_area {
+            FocusedArea::Content => self.content_area.handle_key(event),
+            FocusedArea::Command => self.command_area.handle_key(event),
+        }
     }
 }
