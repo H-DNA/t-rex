@@ -30,7 +30,7 @@ impl Textarea {
         &self.buffer
     }
 
-    pub fn draw<T: DrawingSurface>(&mut self, surface: &mut T) {
+    pub fn draw(&mut self, surface: &mut dyn DrawingSurface) {
         let size = surface.get_bounding_rect_size();
         self.scroll_cursor_into_view(size);
         let line_count = self.buffer.get_line_count();
@@ -55,7 +55,7 @@ impl Textarea {
         }
     }
 
-    pub fn focus<T: DrawingSurface>(&mut self, surface: &mut T) {
+    pub fn focus(&mut self, surface: &mut dyn DrawingSurface) {
         let size = surface.get_bounding_rect_size();
         self.scroll_cursor_into_view(size);
         let RenderPosition { col, row } = self.get_render_position_of_cursor();

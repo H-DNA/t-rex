@@ -1,4 +1,4 @@
-use super::DrawingSurface;
+use super::{DrawingSurface, sink::Sink};
 use crate::editor::{
     canvas::Canvas,
     utility::{Style, TerminalArea, TerminalPosition, TerminalSize},
@@ -7,6 +7,7 @@ use std::{cell::RefCell, rc::Rc};
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
+#[derive(Clone)]
 pub struct Rect {
     canvas: Rc<RefCell<Canvas>>,
     area: TerminalArea,
@@ -102,5 +103,118 @@ impl DrawingSurface for Rect {
             width: self.area.get_width(),
             height: self.area.get_height(),
         }
+    }
+
+    fn slice_bottom_horizontal(
+        &self,
+        rows: u16,
+    ) -> (Box<dyn DrawingSurface>, Box<dyn DrawingSurface>) {
+        if self.area.get_height() < rows {
+            return (Box::new(self.clone()), Box::new(Sink::default()));
+        }
+        (
+            Box::new(Rect::new(
+                self.canvas.clone(),
+                TerminalArea {
+                    top: self.area.get_top(),
+                    left: self.area.get_left(),
+                    bottom: self.area.get_bottom() - rows,
+                    right: self.area.get_right(),
+                },
+            )),
+            Box::new(Rect::new(
+                self.canvas.clone(),
+                TerminalArea {
+                    top: self.area.get_bottom() - rows + 1,
+                    left: self.area.get_left(),
+                    bottom: self.area.get_bottom(),
+                    right: self.area.get_right(),
+                },
+            )),
+        )
+    }
+
+    fn slice_top_horizontal(
+        &self,
+        rows: u16,
+    ) -> (Box<dyn DrawingSurface>, Box<dyn DrawingSurface>) {
+        if self.area.get_height() < rows {
+            return (Box::new(self.clone()), Box::new(Sink::default()));
+        }
+        (
+            Box::new(Rect::new(
+                self.canvas.clone(),
+                TerminalArea {
+                    top: self.area.get_top(),
+                    left: self.area.get_left(),
+                    bottom: self.area.get_top() + rows - 1,
+                    right: self.area.get_right(),
+                },
+            )),
+            Box::new(Rect::new(
+                self.canvas.clone(),
+                TerminalArea {
+                    top: self.area.get_top() + rows,
+                    left: self.area.get_left(),
+                    bottom: self.area.get_bottom(),
+                    right: self.area.get_right(),
+                },
+            )),
+        )
+    }
+
+    fn slice_left_vertical(&self, cols: u16) -> (Box<dyn DrawingSurface>, Box<dyn DrawingSurface>) {
+        if self.area.get_width() < cols {
+            return (Box::new(self.clone()), Box::new(Sink::default()));
+        }
+        (
+            Box::new(Rect::new(
+                self.canvas.clone(),
+                TerminalArea {
+                    top: self.area.get_top(),
+                    left: self.area.get_left(),
+                    bottom: self.area.get_bottom(),
+                    right: self.area.get_left() + cols - 1,
+                },
+            )),
+            Box::new(Rect::new(
+                self.canvas.clone(),
+                TerminalArea {
+                    top: self.area.get_top(),
+                    left: self.area.get_left() + cols,
+                    bottom: self.area.get_bottom(),
+                    right: self.area.get_right(),
+                },
+            )),
+        )
+    }
+
+    fn slice_right_vertical(
+        &self,
+        cols: u16,
+    ) -> (Box<dyn DrawingSurface>, Box<dyn DrawingSurface>) {
+        if self.area.get_width() < cols {
+            return (Box::new(self.clone()), Box::new(Sink::default()));
+        }
+        (
+            Box::new(Rect::new(
+                self.canvas.clone(),
+                TerminalArea {
+                    top: self.area.get_top(),
+                    left: self.area.get_left(),
+                    bottom: self.area.get_bottom(),
+                    right: self.area.get_right() - cols,
+                },
+            )),
+            Box::new(Rect::new(
+                self.canvas.clone(),
+                TerminalArea {
+                    top: self.area.get_top(),
+                    left: self.area.get_right() - cols + 1,
+                    bottom: self.area.get_bottom(),
+                    right: self.area.get_right(),
+                },
+            )),
+        )
     }
 }
